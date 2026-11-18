@@ -915,10 +915,16 @@ function renderCarrinho() {
 
 document.addEventListener('input', function (e) {
   if (e.target.id === 'vendaDesconto') {
-    const val = parseFloat(e.target.value) || 0;
-    if (val > 10 && usuarioAtual.perfil !== 'Gerente') {
-      alert('❌ Somente um gerente pode aplicar desconto acima de 10%!');
-      e.target.value = 10;
+    const val = Number(e.target.value);
+    const gerente = usuarioAtual?.perfil === 'Gerente';
+    const limite = gerente ? 100 : 10;
+    if (!Number.isFinite(val) || val < 0 || val > limite) {
+      if (val > 10 && !gerente) {
+        alert('❌ Somente um gerente pode aplicar desconto acima de 10%!');
+      } else {
+        alert('❌ O desconto deve estar entre 0% e 100%!');
+      }
+      e.target.value = Number.isFinite(val) ? String(Math.max(0, Math.min(limite, val))) : '0';
     }
     renderCarrinho();
   }
@@ -932,7 +938,11 @@ function removerItem(i) {
 function finalizarVenda() {
   if (carrinhoAtual.length === 0) { alert('❌ Carrinho vazio!'); return; }
 
-  const desconto = parseFloat(document.getElementById('vendaDesconto').value) || 0;
+  const desconto = Number(document.getElementById('vendaDesconto').value);
+  if (!Number.isFinite(desconto) || desconto < 0 || desconto > 100) {
+    alert('❌ O desconto deve estar entre 0% e 100%!');
+    return;
+  }
   if (desconto > 10 && usuarioAtual.perfil !== 'Gerente') {
     alert('❌ Somente um gerente pode aplicar desconto acima de 10%!');
     return;
