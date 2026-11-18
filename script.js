@@ -1053,6 +1053,38 @@ function renderVendas() {
   document.getElementById('listaVendas').innerHTML = html;
 }
 
+function exportarVendasCSV() {
+  const vendas = DB.get('vendas');
+  if (vendas.length === 0) {
+    alert('❌ Não há vendas para exportar!');
+    return;
+  }
+
+  const clientes = DB.get('clientes');
+  const linhas = [[
+    'ID da venda', 'Data', 'Hora', 'Cliente', 'CPF', 'Pagamento',
+    'Código do produto', 'Produto', 'Quantidade', 'Preço unitário',
+    'Total do item', 'Desconto (%)', 'Subtotal da venda', 'Total da venda'
+  ]];
+
+  vendas.forEach(venda => {
+    const cliente = venda.cliente
+      ? clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(venda.cliente))
+      : null;
+    (Array.isArray(venda.itens) ? venda.itens : []).forEach(item => {
+      linhas.push([
+        venda.id, venda.data, venda.hora, cliente?.nome || (venda.cliente ? 'Cliente não encontrado' : 'Avulsa'),
+        venda.cliente ? formatarCPF(venda.cliente) : '', venda.pagamento,
+        item.codigo, item.nome, item.qtd, Number(item.preco).toFixed(2),
+        (Number(item.preco) * Number(item.qtd)).toFixed(2), venda.desconto,
+        Number(venda.subtotal).toFixed(2), Number(venda.total).toFixed(2)
+      ]);
+    });
+  });
+
+  baixarCSV(linhas, 'vendas-petcare.csv');
+}
+
 // ============ RELATÓRIOS ============
 function periodoRelatorioValido(inicio, fim) {
   if (inicio && fim && inicio > fim) {
@@ -1169,14 +1201,20 @@ function exportarRelatorioCSV() {
     ['Forma de pagamento', 'Quantidade de vendas', 'Total'],
     ...dados.vendasPorPagamento.map(grupo => [grupo.forma, grupo.quantidade, grupo.total.toFixed(2)])
   ];
-  const csv = linhas
-    .map(linha => linha.map(valor => `"${String(valor).replace(/"/g, '""')}"`).join(';'))
-    .join('\r\n');
+  baixarCSV(linhas, 'relatorio-petcare.csv');
+}
+
+function baixarCSV(linhas, nomeArquivo) {
+  const csv = linhas.map(linha => linha.map(valor => {
+    const texto = String(valor == null ? '' : valor);
+    const seguro = /^[\t\r ]*[=+\-@]/.test(texto) ? `'${texto}` : texto;
+    return `"${seguro.replace(/"/g, '""')}"`;
+  }).join(';')).join('\r\n');
   const arquivo = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(arquivo);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'relatorio-petcare.csv';
+  link.download = nomeArquivo;
   document.body.appendChild(link);
   link.click();
   link.remove();

@@ -410,6 +410,7 @@
             <h3 class="card-title">Histórico de Vendas</h3>
             <div class="search-bar">
               <input type="search" id="buscaVenda" aria-label="Buscar vendas por cliente, CPF, produto ou pagamento" placeholder="🔍 Buscar cliente, CPF, produto ou pagamento..." oninput="renderVendas()">
+              <button class="btn btn-secondary" onclick="exportarVendasCSV()">Exportar CSV</button>
             </div>
             <div id="listaVendas"></div>
           </div>
