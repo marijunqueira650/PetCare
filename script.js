@@ -200,8 +200,11 @@ function renderClientes() {
   const clientes = DB.get('clientes');
   const busca = (document.getElementById('buscaCliente')?.value || '').toLowerCase();
   const buscaCPF = normalizarCPF(busca);
+  const buscaTelefone = busca.replace(/\D/g, '');
   const filtrados = clientes.filter(c => c.nome.toLowerCase().includes(busca)
-    || (buscaCPF && normalizarCPF(c.cpf).includes(buscaCPF)));
+    || (buscaCPF && normalizarCPF(c.cpf).includes(buscaCPF))
+    || (c.email || '').toLowerCase().includes(busca)
+    || (buscaTelefone && String(c.telefone || '').replace(/\D/g, '').includes(buscaTelefone)));
 
   if (filtrados.length === 0) {
     document.getElementById('listaClientes').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum cliente encontrado.</p>';
