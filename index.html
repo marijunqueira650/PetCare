@@ -218,7 +218,7 @@
           
           <div class="card">
             <h3 class="card-title">Agendamentos Marcados</h3>
-            <div class="grid-3">
+            <div class="grid-4">
               <div class="form-group">
                 <label for="filtroAgendaInicio">Data inicial</label>
                 <input type="date" id="filtroAgendaInicio" oninput="renderAgendamentos()">
@@ -235,6 +235,10 @@
                   <option value="Cancelado">Cancelado</option>
                   <option value="Concluído">Concluído</option>
                 </select>
+              </div>
+              <div class="form-group">
+                <label for="filtroAgendaProfissional">Profissional</label>
+                <input type="search" id="filtroAgendaProfissional" placeholder="Filtrar por profissional..." oninput="renderAgendamentos()">
               </div>
             </div>
             <div id="listaAgendamentos"></div>

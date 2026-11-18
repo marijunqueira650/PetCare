@@ -457,10 +457,12 @@ function renderAgendamentos() {
   const inicio = document.getElementById('filtroAgendaInicio').value;
   const fim = document.getElementById('filtroAgendaFim').value;
   const status = document.getElementById('filtroAgendaStatus').value;
+  const profissional = document.getElementById('filtroAgendaProfissional').value.trim().toLowerCase();
   const filtrados = agendamentos.filter(a =>
     (!inicio || a.data >= inicio)
     && (!fim || a.data <= fim)
     && (!status || a.status === status)
+    && (!profissional || String(a.profissional || '').toLowerCase().includes(profissional))
   );
 
   if (filtrados.length === 0) {
