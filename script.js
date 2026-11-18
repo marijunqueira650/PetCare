@@ -377,15 +377,21 @@ function carregarPetsCliente() {
   } else {
     select.innerHTML = pets.map(p => `<option value="${p.nome}">${p.nome} (${p.especie})</option>`).join('');
   }
+  renderHorarios();
 }
 
 function renderHorarios() {
   const data = document.getElementById('agData').value;
   const profissional = document.getElementById('agProfissional').value;
+  const cpf = normalizarCPF(document.getElementById('agCliente').value);
+  const pet = document.getElementById('agPet').value;
   const agendamentos = DB.get('agendamentos');
 
   const horarios = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
-  const ocupados = agendamentos.filter(a => a.data === data && a.profissional === profissional && a.status !== 'Cancelado').map(a => a.horario);
+  const ocupados = agendamentos
+    .filter(a => a.data === data && a.status !== 'Cancelado'
+      && (a.profissional === profissional || (a.pet === pet && normalizarCPF(a.cliente) === cpf)))
+    .map(a => a.horario);
 
   let html = '';
   horarios.forEach(h => {
@@ -433,8 +439,14 @@ function salvarAgendamento() {
   }
 
   const agendamentos = DB.get('agendamentos');
-  if (agendamentos.some(a => a.data === data && a.horario === horarioSelecionado && a.profissional === profissional && a.status !== 'Cancelado')) {
+  if (agendamentos.some(a => a.data === data && a.horario === horarioSelecionado
+    && a.profissional === profissional && a.status !== 'Cancelado')) {
     alert('❌ Este horário já está ocupado para este profissional! (RN03)');
+    return;
+  }
+  if (agendamentos.some(a => a.data === data && a.horario === horarioSelecionado
+    && a.pet === pet && normalizarCPF(a.cliente) === cpf && a.status !== 'Cancelado')) {
+    alert('❌ Este pet já possui um agendamento neste horário!');
     return;
   }
 
