@@ -976,12 +976,23 @@ function obterDadosRelatorio(inicio, fim) {
 
   const totalVendas = vendas.reduce((s, v) => s + v.total, 0);
   const totalAtend = atendimentos.reduce((s, a) => s + (a.valor || 0), 0);
+  const vendasPorPagamento = vendas.reduce((grupos, venda) => {
+    const forma = venda.pagamento || 'Não informado';
+    let grupo = grupos.find(item => item.forma === forma);
+    if (!grupo) {
+      grupo = { forma, quantidade: 0, total: 0 };
+      grupos.push(grupo);
+    }
+    grupo.quantidade += 1;
+    grupo.total += venda.total;
+    return grupos;
+  }, []);
   const estoqueNormal = produtos.filter(p => p.qtd > p.minimo).length;
   const estoqueBaixo = produtos.filter(p => p.qtd > 0 && p.qtd <= p.minimo).length;
   const semEstoque = produtos.filter(p => p.qtd === 0).length;
 
   return {
-    vendas, atendimentos, agendamentos, totalVendas, totalAtend,
+    vendas, atendimentos, agendamentos, totalVendas, totalAtend, vendasPorPagamento,
     estoqueNormal, estoqueBaixo, semEstoque
   };
 }
@@ -993,7 +1004,7 @@ function gerarRelatorio() {
 
   const {
     vendas, atendimentos, agendamentos, totalVendas, totalAtend,
-    estoqueNormal, estoqueBaixo, semEstoque
+    vendasPorPagamento, estoqueNormal, estoqueBaixo, semEstoque
   } = obterDadosRelatorio(inicio, fim);
 
   let html = `
@@ -1009,6 +1020,15 @@ function gerarRelatorio() {
       <p style="color:#64748b;">Vendas: R$ ${totalVendas.toFixed(2)} | Atendimentos: R$ ${totalAtend.toFixed(2)}</p>
     </div>
     
+    <div class="card">
+      <h3 class="card-title">💳 Vendas por Forma de Pagamento</h3>
+      ${vendasPorPagamento.length
+        ? `<table><tr><th>Forma de pagamento</th><th>Vendas</th><th>Total</th></tr>
+          ${vendasPorPagamento.map(grupo => `<tr><td>${grupo.forma}</td><td>${grupo.quantidade}</td><td>R$ ${grupo.total.toFixed(2)}</td></tr>`).join('')}
+        </table>`
+        : '<p style="color:#64748b; text-align:center; padding:15px;">Nenhuma venda no período.</p>'}
+    </div>
+
     <div class="card">
       <h3 class="card-title">📦 Situação do Estoque</h3>
   `;
@@ -1044,7 +1064,11 @@ function exportarRelatorioCSV() {
     ['Faturamento total', (dados.totalVendas + dados.totalAtend).toFixed(2)],
     ['Estoque normal', dados.estoqueNormal],
     ['Estoque baixo', dados.estoqueBaixo],
-    ['Produtos sem estoque', dados.semEstoque]
+    ['Produtos sem estoque', dados.semEstoque],
+    [],
+    ['Vendas por forma de pagamento'],
+    ['Forma de pagamento', 'Quantidade de vendas', 'Total'],
+    ...dados.vendasPorPagamento.map(grupo => [grupo.forma, grupo.quantidade, grupo.total.toFixed(2)])
   ];
   const csv = linhas
     .map(linha => linha.map(valor => `"${String(valor).replace(/"/g, '""')}"`).join(';'))
