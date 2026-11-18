@@ -465,6 +465,12 @@ function salvarAgendamento() {
     return;
   }
 
+  const petObj = DB.get('pets').find(p => p.nome === pet && normalizarCPF(p.tutor) === cpf);
+  if (!petObj) {
+    alert('❌ O pet selecionado não foi encontrado para o tutor informado!');
+    return;
+  }
+
   const profissionalVeterinario = profissional.includes('(Vet)');
   if (servico === 'Consulta' && !profissionalVeterinario) {
     alert('❌ Consultas devem ser agendadas com um veterinário!');
@@ -484,7 +490,6 @@ function salvarAgendamento() {
   }
 
   if (servico.includes('Banho') || servico.includes('Tosa')) {
-    const petObj = DB.get('pets').find(p => p.nome === pet);
     const hoje = new Date().toISOString().split('T')[0];
     const temVacina = petObj.vacinas && petObj.vacinas.some(v => v.nome === 'Antirrábica' && v.proxima >= hoje);
     if (!temVacina) {
