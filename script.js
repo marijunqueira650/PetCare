@@ -538,9 +538,14 @@ function salvarAtendimento() {
   const pet = document.getElementById('atPet').value;
   const diagnostico = document.getElementById('atDiagnostico').value.trim();
   const tratamento = document.getElementById('atTratamento').value.trim();
-  const valor = parseFloat(document.getElementById('atValor').value) || 0;
+  const valorInformado = document.getElementById('atValor').value;
+  const valor = valorInformado === '' ? 0 : Number(valorInformado);
 
   if (!pet || !diagnostico) { alert('❌ Pet e diagnóstico são obrigatórios!'); return; }
+  if (!Number.isFinite(valor) || valor < 0) {
+    alert('❌ O valor do atendimento não pode ser negativo!');
+    return;
+  }
 
   const atendimentos = DB.get('atendimentos');
   const atendimento = {
