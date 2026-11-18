@@ -6,7 +6,7 @@ Verificar o acesso ao sistema com credenciais válidas e a rejeição de credenc
 
 ## Pré-condição
 
-Abra o PetCare em um perfil de navegador de teste. A conta de demonstração `atendente` usa a senha `123`.
+Inicie o servidor Express e abra `http://localhost:3000`, conforme as instruções do README. A conta de demonstração `atendente` usa a senha `123`.
 
 ## Passos
 
