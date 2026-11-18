@@ -544,6 +544,11 @@ function renderAgendamentos() {
   const profissional = document.getElementById('filtroAgendaProfissional').value.trim().toLowerCase();
   const busca = (document.getElementById('filtroAgendaBusca')?.value || '').trim().toLowerCase();
   const buscaCPF = normalizarCPF(busca);
+  if (inicio && fim && inicio > fim) {
+    document.getElementById('listaAgendamentos').innerHTML = '<p style="color:#dc2626; text-align:center; padding:15px;">A data inicial não pode ser posterior à data final.</p>';
+    return;
+  }
+
   const filtrados = agendamentos.filter(a => {
     const cliente = clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(a.cliente));
     const correspondeBusca = !busca
