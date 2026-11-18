@@ -6,7 +6,7 @@ Verificar a criação de um agendamento e o bloqueio de um horário já ocupado 
 
 ## Pré-condição
 
-Tenha um cliente e um pet cadastrados. Use uma data futura e um horário disponível.
+Inicie o servidor Express, acesse o PetCare e entre com uma conta de demonstração, conforme as instruções do README. Tenha um cliente e um pet cadastrados; use uma data futura e um horário disponível.
 
 ## Passos
 
