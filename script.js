@@ -786,9 +786,8 @@ document.addEventListener('input', function (e) {
   if (e.target.id === 'vendaDesconto') {
     const val = parseFloat(e.target.value) || 0;
     if (val > 10 && usuarioAtual.perfil !== 'Gerente') {
-      if (!confirm('Desconto acima de 10% exige autorização do gerente. Confirmar? (RN08)')) {
-        e.target.value = 10;
-      }
+      alert('❌ Somente um gerente pode aplicar desconto acima de 10%!');
+      e.target.value = 10;
     }
     renderCarrinho();
   }
@@ -801,6 +800,12 @@ function removerItem(i) {
 
 function finalizarVenda() {
   if (carrinhoAtual.length === 0) { alert('❌ Carrinho vazio!'); return; }
+
+  const desconto = parseFloat(document.getElementById('vendaDesconto').value) || 0;
+  if (desconto > 10 && usuarioAtual.perfil !== 'Gerente') {
+    alert('❌ Somente um gerente pode aplicar desconto acima de 10%!');
+    return;
+  }
 
   const clienteInformado = document.getElementById('vendaCliente').value.trim();
   const cpfCliente = normalizarCPF(clienteInformado);
@@ -815,7 +820,6 @@ function finalizarVenda() {
 
   if (!confirm('Confirmar pagamento e finalizar venda?')) return;
 
-  const desconto = parseFloat(document.getElementById('vendaDesconto').value) || 0;
   const pagamento = document.getElementById('vendaPagamento').value;
 
   const subtotal = carrinhoAtual.reduce((s, i) => s + i.preco * i.qtd, 0);
