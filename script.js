@@ -408,6 +408,23 @@ function carregarPetsCliente() {
   renderHorarios();
 }
 
+function atualizarProfissionais() {
+  const consulta = document.getElementById('agServico').value === 'Consulta';
+  const select = document.getElementById('agProfissional');
+  const opcoes = Array.from(select.options);
+
+  opcoes.forEach(opcao => {
+    const veterinario = opcao.value.includes('(Vet)');
+    opcao.hidden = consulta !== veterinario;
+    opcao.disabled = opcao.hidden;
+  });
+
+  if (select.selectedOptions[0]?.hidden) {
+    select.value = opcoes.find(opcao => !opcao.hidden).value;
+  }
+  renderHorarios();
+}
+
 function renderHorarios() {
   const data = document.getElementById('agData').value;
   const profissional = document.getElementById('agProfissional').value;
