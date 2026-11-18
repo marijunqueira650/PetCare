@@ -896,15 +896,34 @@ function finalizarVenda() {
 
 function renderVendas() {
   const vendas = DB.get('vendas');
+  const clientes = DB.get('clientes');
+  const busca = (document.getElementById('buscaVenda')?.value || '').trim().toLowerCase();
+  const buscaCPF = normalizarCPF(busca);
   if (vendas.length === 0) {
     document.getElementById('listaVendas').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhuma venda registrada.</p>';
     return;
   }
 
-  let html = '<table><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Desconto</th><th>Total</th><th>Pagamento</th></tr>';
-  vendas.sort((a, b) => (b.data + b.hora).localeCompare(a.data + a.hora)).forEach(v => {
+  const filtradas = vendas.filter(v => {
     const cliente = v.cliente
-      ? (DB.get('clientes').find(c => normalizarCPF(c.cpf) === normalizarCPF(v.cliente))?.nome || formatarCPF(v.cliente))
+      ? clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(v.cliente))
+      : null;
+    const nomeCliente = cliente?.nome || (v.cliente ? formatarCPF(v.cliente) : 'Avulsa');
+    return nomeCliente.toLowerCase().includes(busca)
+      || (buscaCPF && normalizarCPF(v.cliente).includes(buscaCPF))
+      || String(v.pagamento || '').toLowerCase().includes(busca)
+      || (v.itens || []).some(item => String(item.nome || '').toLowerCase().includes(busca)
+        || String(item.codigo || '').toLowerCase().includes(busca));
+  });
+  if (filtradas.length === 0) {
+    document.getElementById('listaVendas').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhuma venda encontrada.</p>';
+    return;
+  }
+
+  let html = '<table><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Desconto</th><th>Total</th><th>Pagamento</th></tr>';
+  filtradas.sort((a, b) => (b.data + b.hora).localeCompare(a.data + a.hora)).forEach(v => {
+    const cliente = v.cliente
+      ? (clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(v.cliente))?.nome || formatarCPF(v.cliente))
       : 'Avulsa';
     html += `<tr>
       <td>${v.data} ${v.hora}</td><td>${cliente}</td>
