@@ -223,8 +223,15 @@ function renderClientes() {
 }
 
 function excluirCliente(cpf) {
+  const cpfNormalizado = normalizarCPF(cpf);
+  const temPetsVinculados = DB.get('pets').some(p => normalizarCPF(p.tutor) === cpfNormalizado);
+  if (temPetsVinculados) {
+    alert('Não é possível excluir este cliente enquanto houver pets vinculados. Remova os pets antes de excluir o cliente.');
+    return;
+  }
+
   if (!confirm('Excluir este cliente?')) return;
-  DB.set('clientes', DB.get('clientes').filter(c => normalizarCPF(c.cpf) !== normalizarCPF(cpf)));
+  DB.set('clientes', DB.get('clientes').filter(c => normalizarCPF(c.cpf) !== cpfNormalizado));
   atualizarTudo();
 }
 
