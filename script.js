@@ -820,6 +820,19 @@ function finalizarVenda() {
 
   if (!confirm('Confirmar pagamento e finalizar venda?')) return;
 
+  const produtos = DB.get('produtos');
+  for (const item of carrinhoAtual) {
+    const produto = produtos.find(p => p.codigo === item.codigo);
+    if (!produto) {
+      alert(`❌ O produto "${item.nome}" não está mais cadastrado!`);
+      return;
+    }
+    if (!Number.isSafeInteger(produto.qtd) || produto.qtd < item.qtd) {
+      alert(`❌ Estoque insuficiente para "${item.nome}". Atualize o estoque antes de finalizar!`);
+      return;
+    }
+  }
+
   const pagamento = document.getElementById('vendaPagamento').value;
 
   const subtotal = carrinhoAtual.reduce((s, i) => s + i.preco * i.qtd, 0);
@@ -832,7 +845,6 @@ function finalizarVenda() {
     hora: new Date().toTimeString().slice(0, 5)
   };
 
-  const produtos = DB.get('produtos');
   carrinhoAtual.forEach(item => {
     const p = produtos.find(pr => pr.codigo === item.codigo);
     p.qtd -= item.qtd;
