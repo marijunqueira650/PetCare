@@ -888,33 +888,46 @@ function renderVendas() {
 }
 
 // ============ RELATÓRIOS ============
-function gerarRelatorio() {
-  const inicio = document.getElementById('relInicio').value;
-  const fim = document.getElementById('relFim').value;
-
+function periodoRelatorioValido(inicio, fim) {
   if (inicio && fim && inicio > fim) {
     document.getElementById('resultadoRelatorio').innerHTML = '';
     alert('❌ A data inicial não pode ser posterior à data final!');
-    return;
+    return false;
   }
 
-  let vendas = DB.get('vendas');
-  let atendimentos = DB.get('atendimentos');
-  let agendamentos = DB.get('agendamentos');
+  return true;
+}
 
-  if (inicio) {
-    vendas = vendas.filter(v => v.data >= inicio);
-    atendimentos = atendimentos.filter(a => a.data >= inicio);
-    agendamentos = agendamentos.filter(a => a.data >= inicio);
-  }
-  if (fim) {
-    vendas = vendas.filter(v => v.data <= fim);
-    atendimentos = atendimentos.filter(a => a.data <= fim);
-    agendamentos = agendamentos.filter(a => a.data <= fim);
-  }
+function obterDadosRelatorio(inicio, fim) {
+  const filtrarPorPeriodo = registros => registros.filter(registro =>
+    (!inicio || registro.data >= inicio) && (!fim || registro.data <= fim)
+  );
+  const vendas = filtrarPorPeriodo(DB.get('vendas'));
+  const atendimentos = filtrarPorPeriodo(DB.get('atendimentos'));
+  const agendamentos = filtrarPorPeriodo(DB.get('agendamentos'));
+  const produtos = DB.get('produtos');
 
   const totalVendas = vendas.reduce((s, v) => s + v.total, 0);
   const totalAtend = atendimentos.reduce((s, a) => s + (a.valor || 0), 0);
+  const estoqueNormal = produtos.filter(p => p.qtd > p.minimo).length;
+  const estoqueBaixo = produtos.filter(p => p.qtd > 0 && p.qtd <= p.minimo).length;
+  const semEstoque = produtos.filter(p => p.qtd === 0).length;
+
+  return {
+    vendas, atendimentos, agendamentos, totalVendas, totalAtend,
+    estoqueNormal, estoqueBaixo, semEstoque
+  };
+}
+
+function gerarRelatorio() {
+  const inicio = document.getElementById('relInicio').value;
+  const fim = document.getElementById('relFim').value;
+  if (!periodoRelatorioValido(inicio, fim)) return;
+
+  const {
+    vendas, atendimentos, agendamentos, totalVendas, totalAtend,
+    estoqueNormal, estoqueBaixo, semEstoque
+  } = obterDadosRelatorio(inicio, fim);
 
   let html = `
     <div class="grid-4">
@@ -933,20 +946,51 @@ function gerarRelatorio() {
       <h3 class="card-title">📦 Situação do Estoque</h3>
   `;
 
-  const produtos = DB.get('produtos');
-  const ok = produtos.filter(p => p.qtd > p.minimo).length;
-  const baixo = produtos.filter(p => p.qtd > 0 && p.qtd <= p.minimo).length;
-  const sem = produtos.filter(p => p.qtd === 0).length;
-
   html += `
     <div class="grid-3">
-      <div class="stat-card"><div class="value" style="color:#16a34a;">${ok}</div><div class="label">✅ Normal</div></div>
-      <div class="stat-card"><div class="value" style="color:#f59e0b;">${baixo}</div><div class="label">⚠️ Estoque Baixo</div></div>
-      <div class="stat-card"><div class="value" style="color:#dc2626;">${sem}</div><div class="label">❌ Sem Estoque</div></div>
+      <div class="stat-card"><div class="value" style="color:#16a34a;">${estoqueNormal}</div><div class="label">✅ Normal</div></div>
+      <div class="stat-card"><div class="value" style="color:#f59e0b;">${estoqueBaixo}</div><div class="label">⚠️ Estoque Baixo</div></div>
+      <div class="stat-card"><div class="value" style="color:#dc2626;">${semEstoque}</div><div class="label">❌ Sem Estoque</div></div>
     </div>
   </div>`;
 
   document.getElementById('resultadoRelatorio').innerHTML = html;
+}
+
+function exportarRelatorioCSV() {
+  const inicio = document.getElementById('relInicio').value;
+  const fim = document.getElementById('relFim').value;
+  if (!periodoRelatorioValido(inicio, fim)) return;
+
+  const dados = obterDadosRelatorio(inicio, fim);
+  const linhas = [
+    ['Relatório PetCare'],
+    ['Data inicial', inicio || 'Sem limite'],
+    ['Data final', fim || 'Sem limite'],
+    [],
+    ['Indicador', 'Valor'],
+    ['Total em vendas', dados.totalVendas.toFixed(2)],
+    ['Vendas realizadas', dados.vendas.length],
+    ['Atendimentos', dados.atendimentos.length],
+    ['Total em atendimentos', dados.totalAtend.toFixed(2)],
+    ['Agendamentos', dados.agendamentos.length],
+    ['Faturamento total', (dados.totalVendas + dados.totalAtend).toFixed(2)],
+    ['Estoque normal', dados.estoqueNormal],
+    ['Estoque baixo', dados.estoqueBaixo],
+    ['Produtos sem estoque', dados.semEstoque]
+  ];
+  const csv = linhas
+    .map(linha => linha.map(valor => `"${String(valor).replace(/"/g, '""')}"`).join(';'))
+    .join('\r\n');
+  const arquivo = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(arquivo);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'relatorio-petcare.csv';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ============ MODAL ============
