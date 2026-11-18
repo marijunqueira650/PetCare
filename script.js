@@ -409,6 +409,14 @@ function salvarAgendamento() {
     return;
   }
 
+  const dataAgendamento = new Date(`${data}T00:00:00`);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  if (Number.isNaN(dataAgendamento.getTime()) || dataAgendamento < hoje) {
+    alert('❌ Não é possível agendar em uma data passada!');
+    return;
+  }
+
   if (servico.includes('Banho') || servico.includes('Tosa')) {
     const petObj = DB.get('pets').find(p => p.nome === pet);
     const hoje = new Date().toISOString().split('T')[0];
