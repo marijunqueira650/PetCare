@@ -124,8 +124,18 @@ function renderHome() {
 }
 
 // ============ CLIENTES ============
+function normalizarCPF(cpf) {
+  return String(cpf || '').replace(/\D/g, '');
+}
+
+function formatarCPF(cpf) {
+  const digitos = normalizarCPF(cpf);
+  if (digitos.length !== 11) return cpf;
+  return digitos.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+}
+
 function cpfValido(cpf) {
-  const digitos = cpf.replace(/\D/g, '');
+  const digitos = normalizarCPF(cpf);
   if (digitos.length !== 11 || /^(\d)\1{10}$/.test(digitos)) return false;
 
   const calcularDigito = (base, pesoInicial) => {
@@ -143,16 +153,17 @@ function cpfValido(cpf) {
 
 function salvarCliente() {
   const nome = document.getElementById('cliNome').value.trim();
-  const cpf = document.getElementById('cliCpf').value.trim();
+  const cpfInformado = document.getElementById('cliCpf').value.trim();
+  const cpf = normalizarCPF(cpfInformado);
   const telefone = document.getElementById('cliTelefone').value.trim();
   const email = document.getElementById('cliEmail').value.trim();
   const endereco = document.getElementById('cliEndereco').value.trim();
 
-  if (!nome || !cpf) { alert('❌ Nome e CPF são obrigatórios!'); return; }
-  if (!cpfValido(cpf)) { alert('❌ Informe um CPF válido!'); return; }
+  if (!nome || !cpfInformado) { alert('❌ Nome e CPF são obrigatórios!'); return; }
+  if (!cpfValido(cpfInformado)) { alert('❌ Informe um CPF válido!'); return; }
 
   const clientes = DB.get('clientes');
-  if (clientes.some(c => c.cpf === cpf)) {
+  if (clientes.some(c => normalizarCPF(c.cpf) === cpf)) {
     alert('❌ Já existe um cliente com este CPF! (RN01)');
     return;
   }
@@ -168,7 +179,9 @@ function salvarCliente() {
 function renderClientes() {
   const clientes = DB.get('clientes');
   const busca = (document.getElementById('buscaCliente')?.value || '').toLowerCase();
-  const filtrados = clientes.filter(c => c.nome.toLowerCase().includes(busca) || c.cpf.includes(busca));
+  const buscaCPF = normalizarCPF(busca);
+  const filtrados = clientes.filter(c => c.nome.toLowerCase().includes(busca)
+    || (buscaCPF && normalizarCPF(c.cpf).includes(buscaCPF)));
 
   if (filtrados.length === 0) {
     document.getElementById('listaClientes').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum cliente encontrado.</p>';
@@ -178,7 +191,7 @@ function renderClientes() {
   let html = '<table><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Ações</th></tr>';
   filtrados.forEach(c => {
     html += `<tr>
-      <td>${c.nome}</td><td>${c.cpf}</td><td>${c.telefone || '-'}</td><td>${c.email || '-'}</td>
+      <td>${c.nome}</td><td>${formatarCPF(c.cpf)}</td><td>${c.telefone || '-'}</td><td>${c.email || '-'}</td>
       <td>
         <button class="btn btn-small btn-secondary" onclick="verHistoricoCliente('${c.cpf}')">📋 Histórico</button>
         <button class="btn btn-small btn-danger" onclick="excluirCliente('${c.cpf}')">🗑️</button>
@@ -191,17 +204,17 @@ function renderClientes() {
 
 function excluirCliente(cpf) {
   if (!confirm('Excluir este cliente?')) return;
-  DB.set('clientes', DB.get('clientes').filter(c => c.cpf !== cpf));
+  DB.set('clientes', DB.get('clientes').filter(c => normalizarCPF(c.cpf) !== normalizarCPF(cpf)));
   atualizarTudo();
 }
 
 function verHistoricoCliente(cpf) {
-  const cliente = DB.get('clientes').find(c => c.cpf === cpf);
-  const pets = DB.get('pets').filter(p => p.tutor === cpf);
+  const cliente = DB.get('clientes').find(c => normalizarCPF(c.cpf) === normalizarCPF(cpf));
+  const pets = DB.get('pets').filter(p => normalizarCPF(p.tutor) === normalizarCPF(cpf));
   const atendimentos = DB.get('atendimentos').filter(a => pets.some(p => p.nome === a.pet));
   const agendamentos = DB.get('agendamentos').filter(a => pets.some(p => p.nome === a.pet));
 
-  let html = `<p><strong>Cliente:</strong> ${cliente.nome}</p><p><strong>CPF:</strong> ${cliente.cpf}</p><hr style="margin:10px 0; border:none; border-top:1px solid #e5e7eb;">`;
+  let html = `<p><strong>Cliente:</strong> ${cliente.nome}</p><p><strong>CPF:</strong> ${formatarCPF(cliente.cpf)}</p><hr style="margin:10px 0; border:none; border-top:1px solid #e5e7eb;">`;
   html += `<h4 style="color:#2563eb; margin:12px 0;">🐾 Pets (${pets.length})</h4>`;
   pets.forEach(p => { html += `<p>• ${p.nome} (${p.especie} - ${p.raca})</p>`; });
   html += `<h4 style="color:#2563eb; margin:12px 0;">📅 Agendamentos (${agendamentos.length})</h4>`;
@@ -215,7 +228,7 @@ function verHistoricoCliente(cpf) {
 // ============ PETS ============
 function salvarPet() {
   const nome = document.getElementById('petNome').value.trim();
-  const tutor = document.getElementById('petTutor').value.trim();
+  const tutor = normalizarCPF(document.getElementById('petTutor').value.trim());
   const especie = document.getElementById('petEspecie').value;
   const raca = document.getElementById('petRaca').value.trim();
   const nascimento = document.getElementById('petNasc').value;
@@ -224,7 +237,7 @@ function salvarPet() {
   if (!nome || !tutor) { alert('❌ Nome e tutor são obrigatórios!'); return; }
 
   const clientes = DB.get('clientes');
-  if (!clientes.some(c => c.cpf === tutor)) {
+  if (!clientes.some(c => normalizarCPF(c.cpf) === tutor)) {
     alert('❌ Tutor não encontrado! Cadastre o cliente primeiro. (RN02)');
     return;
   }
@@ -243,7 +256,7 @@ function renderPets() {
   const clientes = DB.get('clientes');
   const busca = (document.getElementById('buscaPet')?.value || '').toLowerCase();
   const filtrados = pets.filter(p => {
-    const tutor = clientes.find(c => c.cpf === p.tutor);
+    const tutor = clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(p.tutor));
     return p.nome.toLowerCase().includes(busca) || (tutor && tutor.nome.toLowerCase().includes(busca));
   });
 
@@ -254,7 +267,7 @@ function renderPets() {
 
   let html = '<table><tr><th>Nome</th><th>Espécie</th><th>Raça</th><th>Tutor</th><th>Peso</th><th>Vacinas</th><th>Ações</th></tr>';
   filtrados.forEach(p => {
-    const tutor = clientes.find(c => c.cpf === p.tutor);
+    const tutor = clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(p.tutor));
     html += `<tr>
       <td>${p.nome}</td><td>${p.especie}</td><td>${p.raca || '-'}</td>
       <td>${tutor ? tutor.nome : p.tutor}</td><td>${p.peso || '-'} kg</td>
@@ -305,8 +318,8 @@ function verHistoricoPet(nome) {
 
 // ============ AGENDAMENTOS ============
 function carregarPetsCliente() {
-  const cpf = document.getElementById('agCliente').value.trim();
-  const pets = DB.get('pets').filter(p => p.tutor === cpf);
+  const cpf = normalizarCPF(document.getElementById('agCliente').value.trim());
+  const pets = DB.get('pets').filter(p => normalizarCPF(p.tutor) === cpf);
   const select = document.getElementById('agPet');
   if (pets.length === 0) {
     select.innerHTML = '<option>Nenhum pet encontrado</option>';
@@ -339,7 +352,7 @@ function selecionarHorario(h, el) {
 }
 
 function salvarAgendamento() {
-  const cpf = document.getElementById('agCliente').value.trim();
+  const cpf = normalizarCPF(document.getElementById('agCliente').value.trim());
   const pet = document.getElementById('agPet').value;
   const servico = document.getElementById('agServico').value;
   const profissional = document.getElementById('agProfissional').value;
@@ -666,7 +679,7 @@ function finalizarVenda() {
 
   const venda = {
     id: Date.now(),
-    cliente, itens: [...carrinhoAtual], subtotal, desconto, total, pagamento,
+    cliente: normalizarCPF(cliente) || null, itens: [...carrinhoAtual], subtotal, desconto, total, pagamento,
     data: new Date().toISOString().split('T')[0],
     hora: new Date().toTimeString().slice(0, 5)
   };
@@ -699,7 +712,9 @@ function renderVendas() {
 
   let html = '<table><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Desconto</th><th>Total</th><th>Pagamento</th></tr>';
   vendas.sort((a, b) => (b.data + b.hora).localeCompare(a.data + a.hora)).forEach(v => {
-    const cliente = v.cliente ? (DB.get('clientes').find(c => c.cpf === v.cliente)?.nome || v.cliente) : 'Avulsa';
+    const cliente = v.cliente
+      ? (DB.get('clientes').find(c => normalizarCPF(c.cpf) === normalizarCPF(v.cliente))?.nome || formatarCPF(v.cliente))
+      : 'Avulsa';
     html += `<tr>
       <td>${v.data} ${v.hora}</td><td>${cliente}</td>
       <td>${v.itens.length} item(s)</td>
