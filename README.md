@@ -1,10 +1,32 @@
 # PetCare
 
-Sistema de gestão de petshop para organizar clientes, pets, agendamentos, atendimentos, produtos, vendas e relatórios.
+## Descrição do projeto
+
+O PetCare é um sistema web para apoiar a gestão de um petshop. Ele reúne cadastros de clientes e pets, agendamentos, atendimentos veterinários, controle de produtos e vendas em uma única interface. O Express hospeda os arquivos estáticos; o sistema não possui API de dados e salva as informações no navegador.
 
 ## Integrante
 
 - Mariana
+
+## Perfis de usuário
+
+O sistema oferece quatro perfis demonstrativos:
+
+| Perfil | Usuário | Responsabilidade no sistema |
+| --- | --- | --- |
+| Atendente | `atendente` | Apoia cadastros, agendamentos e vendas. |
+| Veterinário | `veterinario` | Registra atendimentos e informações de vacinação. |
+| Tosador | `tosador` | Consulta pets e organiza serviços de banho e tosa. |
+| Gerente | `gerente` | Acompanha a operação e autoriza descontos acima de 10%. |
+
+## Funcionalidades
+
+- Painel com indicadores, agendamentos do dia e alertas de estoque.
+- Cadastro de clientes e pets, com consulta de históricos.
+- Agendamento de serviços e consulta de horários ocupados.
+- Registro de atendimentos veterinários e vacinas.
+- Cadastro de produtos, ajuste de estoque e alertas de estoque baixo.
+- Registro de vendas, atualização de estoque e relatórios.
 
 ## Tecnologias
 
@@ -33,7 +55,7 @@ Sistema de gestão de petshop para organizar clientes, pets, agendamentos, atend
 
 4. Acesse `http://localhost:3000`.
 
-Os dados ficam salvos no `localStorage` do navegador utilizado. Para testar o acesso, use um dos perfis disponíveis:
+Os dados ficam no `localStorage` do navegador e não são compartilhados entre dispositivos. Os perfis e senhas abaixo são apenas demonstrações: a autenticação é feita no frontend e não deve ser usada para proteger dados reais.
 
 | Usuário | Senha |
 | --- | --- |
@@ -41,6 +63,10 @@ Os dados ficam salvos no `localStorage` do navegador utilizado. Para testar o ac
 | `veterinario` | `123` |
 | `tosador` | `123` |
 | `gerente` | `123` |
+
+## Documentação
+
+Os artigos de análise e de projeto ficam na raiz do repositório; o PDF atualmente versionado é `PetCareF.pdf`. Os roteiros de testes manuais ficam em `testes/manuais/`.
 
 ## Testes
 
