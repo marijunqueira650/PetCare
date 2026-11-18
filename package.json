@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/marijunqueira650/PetCare/issues"
   },
-  "homepage": "https://github.com/marijunqueira650/PetCare#readme"
+  "homepage": "https://github.com/marijunqueira650/PetCare#readme",
+  "dependencies": {
+    "express": "^5.3.0"
+  }
 }
