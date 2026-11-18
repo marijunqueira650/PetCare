@@ -671,10 +671,18 @@ function salvarProduto() {
 function renderProdutos() {
   const produtos = DB.get('produtos');
   const busca = (document.getElementById('buscaProduto')?.value || '').toLowerCase();
-  const filtrados = produtos.filter(p => p.nome.toLowerCase().includes(busca) || p.codigo.toLowerCase().includes(busca));
+  const filtroEstoque = document.getElementById('filtroEstoque')?.value || '';
+  const filtrados = produtos.filter(p => {
+    const correspondeBusca = p.nome.toLowerCase().includes(busca) || p.codigo.toLowerCase().includes(busca);
+    const correspondeEstoque = !filtroEstoque
+      || (filtroEstoque === 'normal' && p.qtd > p.minimo)
+      || (filtroEstoque === 'baixo' && p.qtd > 0 && p.qtd <= p.minimo)
+      || (filtroEstoque === 'sem_estoque' && p.qtd === 0);
+    return correspondeBusca && correspondeEstoque;
+  });
 
   if (filtrados.length === 0) {
-    document.getElementById('listaProdutos').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum produto.</p>';
+    document.getElementById('listaProdutos').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum produto encontrado.</p>';
     return;
   }
 

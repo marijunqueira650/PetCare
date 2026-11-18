@@ -335,6 +335,12 @@
             <h3 class="card-title">Produtos Cadastrados</h3>
             <div class="search-bar">
               <input type="text" id="buscaProduto" aria-label="Buscar produtos" placeholder="🔍 Buscar produto..." oninput="renderProdutos()">
+              <select id="filtroEstoque" aria-label="Filtrar produtos por nível de estoque" onchange="renderProdutos()">
+                <option value="">Todos os estoques</option>
+                <option value="normal">Estoque normal</option>
+                <option value="baixo">Estoque baixo</option>
+                <option value="sem_estoque">Sem estoque</option>
+              </select>
             </div>
             <div id="listaProdutos"></div>
           </div>
