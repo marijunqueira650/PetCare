@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: petcare
+    runtime: node
+    buildCommand: npm ci
+    startCommand: npm start
