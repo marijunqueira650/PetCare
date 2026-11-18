@@ -1,18 +1,6 @@
 # PetCare
 
-## Descrição do projeto
-
-O PetCare é um sistema web de gestão de petshop. Ele reúne em uma única interface o cadastro de clientes e seus pets, a organização de agendamentos e atendimentos, o controle de produtos e vendas e a consulta de relatórios. Os dados da aplicação são armazenados no navegador usando `localStorage`.
-
-## Funcionalidades
-
-- Exibe um painel com indicadores, agendamentos do dia e alertas de estoque.
-- Cadastra clientes e pets e permite consultar seus históricos.
-- Organiza agendamentos e permite visualizar e cancelar horários.
-- Registra atendimentos veterinários e informações de vacinação.
-- Cadastra produtos, acompanha quantidades em estoque e permite ajustá-las.
-- Monta o carrinho e registra vendas.
-- Gera relatórios do sistema.
+Sistema de gestão de petshop para organizar clientes, pets, agendamentos, atendimentos, produtos, vendas e relatórios.
 
 ## Integrante
 
@@ -23,31 +11,48 @@ O PetCare é um sistema web de gestão de petshop. Ele reúne em uma única inte
 - HTML
 - CSS
 - JavaScript
+- Node.js e Express para hospedar os arquivos do site
 - `localStorage` do navegador para armazenar os dados
 
 ## Como executar
 
-1. Clone o repositório:
+1. Instale o Node.js 22 ou superior.
+2. Clone o repositório e instale as dependências:
 
    ```bash
    git clone https://github.com/marijunqueira650/PetCare.git
+   cd PetCare
+   npm install
    ```
 
-2. Abra a pasta do projeto.
-3. Abra o arquivo `index.html` em um navegador. Não é necessário instalar dependências para executar a aplicação.
+3. Inicie o servidor Express:
 
-## Perfis de usuário
+   ```bash
+   npm start
+   ```
 
-O sistema disponibiliza estes perfis para acesso de demonstração:
+4. Acesse `http://localhost:3000`.
 
-| Perfil | Usuário | Senha |
-| --- | --- | --- |
-| Atendente | `atendente` | `123` |
-| Veterinário | `veterinario` | `123` |
-| Tosador | `tosador` | `123` |
-| Gerente | `gerente` | `123` |
+Os dados ficam salvos no `localStorage` do navegador utilizado. Para testar o acesso, use um dos perfis disponíveis:
 
-Os dados são salvos no navegador utilizado.
+| Usuário | Senha |
+| --- | --- |
+| `atendente` | `123` |
+| `veterinario` | `123` |
+| `tosador` | `123` |
+| `gerente` | `123` |
+
+## Testes
+
+Execute o teste do servidor estático com:
+
+```bash
+npm test
+```
+
+## Publicação no Render
+
+O arquivo `render.yaml` configura o serviço Node.js. Crie um Blueprint no Render a partir deste repositório. O Express hospeda somente os arquivos do site; os dados continuam no armazenamento local de cada navegador.
 
 ## Versionamento
 
@@ -58,7 +63,3 @@ feat: adiciona cadastro de clientes
 fix: corrige validação do agendamento
 docs: atualiza instruções de execução
 ```
-
-## Documentação
-
-Os arquivos dos artigos de análise e projeto ficam na raiz do repositório, junto ao README e aos arquivos da aplicação. O material em PDF atualmente versionado é `PetCareF.pdf`.
