@@ -88,6 +88,8 @@ function renderHome() {
   const agendamentos = DB.get('agendamentos');
   const vendas = DB.get('vendas');
   const produtos = DB.get('produtos');
+  const hojeData = new Date();
+  hojeData.setHours(0, 0, 0, 0);
 
   const hoje = new Date().toISOString().split('T')[0];
   const agHoje = agendamentos.filter(a => a.data === hoje);
@@ -109,6 +111,32 @@ function renderHome() {
     });
     html += '</table>';
     document.getElementById('todayAppointments').innerHTML = html;
+  }
+
+  const dosesPendentes = [];
+  pets.forEach(pet => {
+    (pet.vacinas || []).forEach(vacina => {
+      if (!vacina.proxima) return;
+      const dataProxima = new Date(`${vacina.proxima}T00:00:00`);
+      if (Number.isNaN(dataProxima.getTime())) return;
+      dosesPendentes.push({ pet: pet.nome, vacina: vacina.nome, data: dataProxima });
+    });
+  });
+  dosesPendentes.sort((a, b) => a.data - b.data);
+
+  if (dosesPendentes.length === 0) {
+    document.getElementById('vaccineAlerts').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhuma próxima dose registrada.</p>';
+  } else {
+    let html = '<table><tr><th>Pet</th><th>Vacina</th><th>Próxima dose</th><th>Status</th></tr>';
+    dosesPendentes.forEach(dose => {
+      const atrasada = dose.data < hojeData;
+      const hoje = dose.data.getTime() === hojeData.getTime();
+      const status = atrasada ? 'Atrasada' : hoje ? 'Hoje' : 'Próxima';
+      const badge = atrasada ? 'badge-danger' : hoje ? 'badge-warning' : 'badge-info';
+      html += `<tr><td>${dose.pet}</td><td>${dose.vacina || '-'}</td><td>${dose.data.toLocaleDateString('pt-BR')}</td><td><span class="badge ${badge}">${status}</span></td></tr>`;
+    });
+    html += '</table>';
+    document.getElementById('vaccineAlerts').innerHTML = html;
   }
 
   const alertas = produtos.filter(p => p.qtd <= p.minimo);
