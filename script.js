@@ -751,11 +751,22 @@ function mostrarPrecoProduto() { }
 
 function adicionarItemVenda() {
   const codigo = document.getElementById('vendaProduto').value;
-  const qtd = parseInt(document.getElementById('vendaQtd').value);
-  if (!codigo || !qtd) return;
+  const qtd = Number(document.getElementById('vendaQtd').value);
+  if (!codigo) {
+    alert('❌ Selecione um produto antes de adicionar ao carrinho!');
+    return;
+  }
+  if (!Number.isSafeInteger(qtd) || qtd < 1) {
+    alert('❌ A quantidade deve ser um número inteiro maior que zero!');
+    return;
+  }
 
   const produtos = DB.get('produtos');
   const prod = produtos.find(p => p.codigo === codigo);
+  if (!prod) {
+    alert('❌ Produto não encontrado! Atualize a lista e tente novamente.');
+    return;
+  }
 
   const jaNoCarrinho = carrinhoAtual.find(i => i.codigo === codigo);
   const qtdJa = jaNoCarrinho ? jaNoCarrinho.qtd : 0;
