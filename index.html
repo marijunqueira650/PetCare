@@ -218,6 +218,9 @@
           
           <div class="card">
             <h3 class="card-title">Agendamentos Marcados</h3>
+            <div class="search-bar">
+              <input type="search" id="filtroAgendaBusca" aria-label="Buscar agendamentos por cliente, CPF ou pet" placeholder="🔍 Buscar cliente, CPF ou pet..." oninput="renderAgendamentos()">
+            </div>
             <div class="grid-4">
               <div class="form-group">
                 <label for="filtroAgendaInicio">Data inicial</label>

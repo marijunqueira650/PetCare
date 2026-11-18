@@ -466,16 +466,25 @@ function salvarAgendamento() {
 
 function renderAgendamentos() {
   const agendamentos = DB.get('agendamentos');
+  const clientes = DB.get('clientes');
   const inicio = document.getElementById('filtroAgendaInicio').value;
   const fim = document.getElementById('filtroAgendaFim').value;
   const status = document.getElementById('filtroAgendaStatus').value;
   const profissional = document.getElementById('filtroAgendaProfissional').value.trim().toLowerCase();
-  const filtrados = agendamentos.filter(a =>
-    (!inicio || a.data >= inicio)
-    && (!fim || a.data <= fim)
-    && (!status || a.status === status)
-    && (!profissional || String(a.profissional || '').toLowerCase().includes(profissional))
-  );
+  const busca = (document.getElementById('filtroAgendaBusca')?.value || '').trim().toLowerCase();
+  const buscaCPF = normalizarCPF(busca);
+  const filtrados = agendamentos.filter(a => {
+    const cliente = clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(a.cliente));
+    const correspondeBusca = !busca
+      || String(a.pet || '').toLowerCase().includes(busca)
+      || (cliente && cliente.nome.toLowerCase().includes(busca))
+      || (buscaCPF && normalizarCPF(a.cliente).includes(buscaCPF));
+    return correspondeBusca
+      && (!inicio || a.data >= inicio)
+      && (!fim || a.data <= fim)
+      && (!status || a.status === status)
+      && (!profissional || String(a.profissional || '').toLowerCase().includes(profissional));
+  });
 
   if (filtrados.length === 0) {
     document.getElementById('listaAgendamentos').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum agendamento encontrado.</p>';
