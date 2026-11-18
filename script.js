@@ -259,9 +259,25 @@ function salvarPet() {
   const especie = document.getElementById('petEspecie').value;
   const raca = document.getElementById('petRaca').value.trim();
   const nascimento = document.getElementById('petNasc').value;
-  const peso = parseFloat(document.getElementById('petPeso').value);
+  const pesoInformado = document.getElementById('petPeso').value;
+  const peso = pesoInformado === '' ? null : Number(pesoInformado);
 
   if (!nome || !tutor) { alert('❌ Nome e tutor são obrigatórios!'); return; }
+
+  if (nascimento) {
+    const dataNascimento = new Date(`${nascimento}T00:00:00`);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    if (Number.isNaN(dataNascimento.getTime()) || dataNascimento > hoje) {
+      alert('❌ A data de nascimento não pode estar no futuro!');
+      return;
+    }
+  }
+
+  if (pesoInformado !== '' && (!Number.isFinite(peso) || peso <= 0)) {
+    alert('❌ O peso deve ser maior que zero!');
+    return;
+  }
 
   const clientes = DB.get('clientes');
   if (!clientes.some(c => normalizarCPF(c.cpf) === tutor)) {
@@ -270,7 +286,7 @@ function salvarPet() {
   }
 
   const pets = DB.get('pets');
-  pets.push({ nome, tutor, especie, raca, nascimento, peso, vacinas: [] });
+  pets.push({ nome, tutor, especie, raca, nascimento: nascimento || null, peso, vacinas: [] });
   DB.set('pets', pets);
 
   ['petNome', 'petTutor', 'petRaca', 'petNasc', 'petPeso'].forEach(id => document.getElementById(id).value = '');
