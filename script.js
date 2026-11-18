@@ -613,11 +613,26 @@ function renderAtendimentos() {
 function salvarProduto() {
   const codigo = document.getElementById('prodCodigo').value.trim();
   const nome = document.getElementById('prodNome').value.trim();
-  const preco = parseFloat(document.getElementById('prodPreco').value);
-  const qtd = parseInt(document.getElementById('prodQtd').value);
-  const minimo = parseInt(document.getElementById('prodMin').value);
+  const precoInformado = document.getElementById('prodPreco').value;
+  const quantidadeInformada = document.getElementById('prodQtd').value;
+  const minimoInformado = document.getElementById('prodMin').value;
+  const preco = Number(precoInformado);
+  const qtd = quantidadeInformada === '' ? 0 : Number(quantidadeInformada);
+  const minimo = minimoInformado === '' ? 0 : Number(minimoInformado);
 
-  if (!codigo || !nome || isNaN(preco)) { alert('❌ Preencha todos os campos!'); return; }
+  if (!codigo || !nome || precoInformado === '') { alert('❌ Código, nome e preço são obrigatórios!'); return; }
+  if (!Number.isFinite(preco) || preco <= 0) {
+    alert('❌ O preço do produto deve ser maior que zero!');
+    return;
+  }
+  if (!Number.isInteger(qtd) || qtd < 0) {
+    alert('❌ A quantidade em estoque deve ser um número inteiro igual ou maior que zero!');
+    return;
+  }
+  if (!Number.isInteger(minimo) || minimo < 0) {
+    alert('❌ O estoque mínimo deve ser um número inteiro igual ou maior que zero!');
+    return;
+  }
 
   const produtos = DB.get('produtos');
   const codigoNormalizado = codigo.toLowerCase();
