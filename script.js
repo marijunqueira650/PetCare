@@ -298,9 +298,12 @@ function renderPets() {
   const pets = DB.get('pets');
   const clientes = DB.get('clientes');
   const busca = (document.getElementById('buscaPet')?.value || '').toLowerCase();
+  const especie = document.getElementById('filtroEspecie')?.value || '';
   const filtrados = pets.filter(p => {
     const tutor = clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(p.tutor));
-    return p.nome.toLowerCase().includes(busca) || (tutor && tutor.nome.toLowerCase().includes(busca));
+    const correspondeBusca = p.nome.toLowerCase().includes(busca)
+      || (tutor && tutor.nome.toLowerCase().includes(busca));
+    return correspondeBusca && (!especie || p.especie === especie);
   });
 
   if (filtrados.length === 0) {

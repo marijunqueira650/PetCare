@@ -473,6 +473,20 @@ tr:hover { background: #f8f9fa; }
   border-color: #2563eb;
 }
 
+.search-bar select {
+  min-width: 180px;
+  padding: 10px 14px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  color: #1f2937;
+}
+
+.search-bar select:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
 .footer {
   text-align: center;
   padding: 20px;
