@@ -151,6 +151,21 @@ function cpfValido(cpf) {
     && calcularDigito(digitos.slice(0, 10), 11) === Number(digitos[10]);
 }
 
+function emailValido(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function telefoneValido(telefone) {
+  if (!/^[\d\s()+.-]+$/.test(telefone)) return false;
+
+  const digitos = telefone.replace(/\D/g, '');
+  const numeroNacional = digitos.startsWith('55') && [12, 13].includes(digitos.length)
+    ? digitos.slice(2)
+    : digitos;
+
+  return [10, 11].includes(numeroNacional.length);
+}
+
 function salvarCliente() {
   const nome = document.getElementById('cliNome').value.trim();
   const cpfInformado = document.getElementById('cliCpf').value.trim();
@@ -161,6 +176,11 @@ function salvarCliente() {
 
   if (!nome || !cpfInformado) { alert('❌ Nome e CPF são obrigatórios!'); return; }
   if (!cpfValido(cpfInformado)) { alert('❌ Informe um CPF válido!'); return; }
+  if (email && !emailValido(email)) { alert('❌ Informe um e-mail válido!'); return; }
+  if (telefone && !telefoneValido(telefone)) {
+    alert('❌ Informe um telefone válido com DDD!');
+    return;
+  }
 
   const clientes = DB.get('clientes');
   if (clientes.some(c => normalizarCPF(c.cpf) === cpf)) {
