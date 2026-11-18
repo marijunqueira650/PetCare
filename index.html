@@ -218,6 +218,24 @@
           
           <div class="card">
             <h3 class="card-title">Agendamentos Marcados</h3>
+            <div class="grid-3">
+              <div class="form-group">
+                <label for="filtroAgendaInicio">Data inicial</label>
+                <input type="date" id="filtroAgendaInicio" oninput="renderAgendamentos()">
+              </div>
+              <div class="form-group">
+                <label for="filtroAgendaFim">Data final</label>
+                <input type="date" id="filtroAgendaFim" oninput="renderAgendamentos()">
+              </div>
+              <div class="form-group">
+                <label for="filtroAgendaStatus">Status</label>
+                <select id="filtroAgendaStatus" onchange="renderAgendamentos()">
+                  <option value="">Todos os status</option>
+                  <option value="Agendado">Agendado</option>
+                  <option value="Cancelado">Cancelado</option>
+                </select>
+              </div>
+            </div>
             <div id="listaAgendamentos"></div>
           </div>
         </div>

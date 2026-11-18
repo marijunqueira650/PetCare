@@ -449,13 +449,22 @@ function salvarAgendamento() {
 
 function renderAgendamentos() {
   const agendamentos = DB.get('agendamentos');
-  if (agendamentos.length === 0) {
-    document.getElementById('listaAgendamentos').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum agendamento.</p>';
+  const inicio = document.getElementById('filtroAgendaInicio').value;
+  const fim = document.getElementById('filtroAgendaFim').value;
+  const status = document.getElementById('filtroAgendaStatus').value;
+  const filtrados = agendamentos.filter(a =>
+    (!inicio || a.data >= inicio)
+    && (!fim || a.data <= fim)
+    && (!status || a.status === status)
+  );
+
+  if (filtrados.length === 0) {
+    document.getElementById('listaAgendamentos').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum agendamento encontrado.</p>';
     return;
   }
 
   let html = '<table><tr><th>Data</th><th>Horário</th><th>Pet</th><th>Serviço</th><th>Profissional</th><th>Status</th><th>Ações</th></tr>';
-  agendamentos.sort((a, b) => (b.data + b.horario).localeCompare(a.data + a.horario)).forEach(a => {
+  filtrados.sort((a, b) => (b.data + b.horario).localeCompare(a.data + a.horario)).forEach(a => {
     const badge = a.status === 'Agendado' ? 'badge-info' : a.status === 'Cancelado' ? 'badge-danger' : 'badge-success';
     html += `<tr>
       <td>${a.data}</td><td>${a.horario}</td><td>${a.pet}</td><td>${a.servico}</td><td>${a.profissional}</td>
