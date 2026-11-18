@@ -448,6 +448,16 @@ function salvarAgendamento() {
     return;
   }
 
+  const profissionalVeterinario = profissional.includes('(Vet)');
+  if (servico === 'Consulta' && !profissionalVeterinario) {
+    alert('❌ Consultas devem ser agendadas com um veterinário!');
+    return;
+  }
+  if (['Banho', 'Tosa', 'Banho e Tosa'].includes(servico) && profissionalVeterinario) {
+    alert('❌ Banho e tosa devem ser agendados com um tosador!');
+    return;
+  }
+
   const dataAgendamento = new Date(`${data}T00:00:00`);
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
