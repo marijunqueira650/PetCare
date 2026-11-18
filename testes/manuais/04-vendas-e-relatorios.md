@@ -6,7 +6,7 @@ Verificar a finalização de uma venda, a atualização do estoque e a inclusão
 
 ## Pré-condição
 
-Use um perfil de navegador de teste com um produto que tenha estoque disponível. A venda altera os dados salvos no navegador.
+Inicie o servidor Express, acesse o PetCare e entre com uma conta de demonstração, conforme as instruções do README. Use um produto com estoque disponível; a venda altera os dados no `localStorage` do navegador.
 
 ## Passos
 
