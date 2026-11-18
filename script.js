@@ -124,6 +124,23 @@ function renderHome() {
 }
 
 // ============ CLIENTES ============
+function cpfValido(cpf) {
+  const digitos = cpf.replace(/\D/g, '');
+  if (digitos.length !== 11 || /^(\d)\1{10}$/.test(digitos)) return false;
+
+  const calcularDigito = (base, pesoInicial) => {
+    let soma = 0;
+    for (let i = 0; i < base.length; i++) {
+      soma += Number(base[i]) * (pesoInicial - i);
+    }
+    const resto = soma % 11;
+    return resto < 2 ? 0 : 11 - resto;
+  };
+
+  return calcularDigito(digitos.slice(0, 9), 10) === Number(digitos[9])
+    && calcularDigito(digitos.slice(0, 10), 11) === Number(digitos[10]);
+}
+
 function salvarCliente() {
   const nome = document.getElementById('cliNome').value.trim();
   const cpf = document.getElementById('cliCpf').value.trim();
@@ -132,6 +149,7 @@ function salvarCliente() {
   const endereco = document.getElementById('cliEndereco').value.trim();
 
   if (!nome || !cpf) { alert('❌ Nome e CPF são obrigatórios!'); return; }
+  if (!cpfValido(cpf)) { alert('❌ Informe um CPF válido!'); return; }
 
   const clientes = DB.get('clientes');
   if (clientes.some(c => c.cpf === cpf)) {
