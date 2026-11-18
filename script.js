@@ -822,6 +822,12 @@ function gerarRelatorio() {
   const inicio = document.getElementById('relInicio').value;
   const fim = document.getElementById('relFim').value;
 
+  if (inicio && fim && inicio > fim) {
+    document.getElementById('resultadoRelatorio').innerHTML = '';
+    alert('❌ A data inicial não pode ser posterior à data final!');
+    return;
+  }
+
   let vendas = DB.get('vendas');
   let atendimentos = DB.get('atendimentos');
   let agendamentos = DB.get('agendamentos');
