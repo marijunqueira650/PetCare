@@ -491,7 +491,10 @@ function salvarAgendamento() {
 
   if (servico.includes('Banho') || servico.includes('Tosa')) {
     const hoje = new Date().toISOString().split('T')[0];
-    const temVacina = petObj.vacinas && petObj.vacinas.some(v => v.nome === 'Antirrábica' && v.proxima >= hoje);
+    const temVacina = petObj.vacinas && petObj.vacinas.some(v => {
+      const nome = String(v.nome || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+      return nome === 'antirrabica' && v.proxima >= hoje;
+    });
     if (!temVacina) {
       alert('❌ Este pet não possui vacina antirrábica em dia! (RN05)');
       return;
