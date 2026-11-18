@@ -26,14 +26,18 @@ O PetCare é um sistema web de gestão de petshop. Ele reúne em uma única inte
 2. Abra a pasta do projeto.
 3. Abra o arquivo `index.html` em um navegador. Não é necessário instalar dependências para executar a aplicação.
 
-Os dados são salvos no navegador utilizado. Para testar o acesso, use um dos perfis disponíveis:
+## Perfis de usuário
 
-| Usuário | Senha |
-| --- | --- |
-| `atendente` | `123` |
-| `veterinario` | `123` |
-| `tosador` | `123` |
-| `gerente` | `123` |
+O sistema disponibiliza estes perfis para acesso de demonstração:
+
+| Perfil | Usuário | Senha |
+| --- | --- | --- |
+| Atendente | `atendente` | `123` |
+| Veterinário | `veterinario` | `123` |
+| Tosador | `tosador` | `123` |
+| Gerente | `gerente` | `123` |
+
+Os dados são salvos no navegador utilizado.
 
 ## Versionamento
 
