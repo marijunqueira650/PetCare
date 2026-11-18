@@ -683,9 +683,20 @@ function renderProdutos() {
 function ajustarEstoque(codigo) {
   const qtd = prompt('Nova quantidade em estoque:');
   if (qtd === null) return;
+  const quantidadeInformada = qtd.trim();
+  if (!/^\d+$/.test(quantidadeInformada)) {
+    alert('❌ Informe uma quantidade inteira igual ou maior que zero!');
+    return;
+  }
+  const novaQuantidade = Number(quantidadeInformada);
+  if (!Number.isSafeInteger(novaQuantidade)) {
+    alert('❌ A quantidade informada está fora do limite permitido!');
+    return;
+  }
+
   const produtos = DB.get('produtos');
   const p = produtos.find(p => p.codigo === codigo);
-  p.qtd = parseInt(qtd);
+  p.qtd = novaQuantidade;
   DB.set('produtos', produtos);
 
   if (p.qtd <= p.minimo) {
