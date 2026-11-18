@@ -301,11 +301,13 @@ function renderPets() {
   const pets = DB.get('pets');
   const clientes = DB.get('clientes');
   const busca = (document.getElementById('buscaPet')?.value || '').toLowerCase();
+  const buscaCPF = normalizarCPF(busca);
   const especie = document.getElementById('filtroEspecie')?.value || '';
   const filtrados = pets.filter(p => {
     const tutor = clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(p.tutor));
     const correspondeBusca = p.nome.toLowerCase().includes(busca)
-      || (tutor && tutor.nome.toLowerCase().includes(busca));
+      || (tutor && tutor.nome.toLowerCase().includes(busca))
+      || (buscaCPF && normalizarCPF(p.tutor).includes(buscaCPF));
     return correspondeBusca && (!especie || p.especie === especie);
   });
 
