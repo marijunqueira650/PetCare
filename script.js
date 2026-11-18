@@ -558,6 +558,13 @@ function salvarAtendimento() {
       alert('❌ Preencha todos os dados da vacina! (RN10)');
       return;
     }
+    const dataAplicacao = new Date(`${atendimento.data}T00:00:00`);
+    const proximaDose = new Date(`${vacProxima}T00:00:00`);
+    if (Number.isNaN(proximaDose.getTime()) || proximaDose <= dataAplicacao) {
+      alert('❌ A próxima dose deve ser posterior à data da aplicação!');
+      return;
+    }
+
     atendimento.vacina = { nome: vacNome, lote: vacLote, data: atendimento.data, proxima: vacProxima };
 
     const pets = DB.get('pets');
