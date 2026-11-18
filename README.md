@@ -4,6 +4,16 @@
 
 O PetCare é um sistema web de gestão de petshop. Ele reúne em uma única interface o cadastro de clientes e seus pets, a organização de agendamentos e atendimentos, o controle de produtos e vendas e a consulta de relatórios. Os dados da aplicação são armazenados no navegador usando `localStorage`.
 
+## Funcionalidades
+
+- Exibe um painel com indicadores, agendamentos do dia e alertas de estoque.
+- Cadastra clientes e pets e permite consultar seus históricos.
+- Organiza agendamentos e permite visualizar e cancelar horários.
+- Registra atendimentos veterinários e informações de vacinação.
+- Cadastra produtos, acompanha quantidades em estoque e permite ajustá-las.
+- Monta o carrinho e registra vendas.
+- Gera relatórios do sistema.
+
 ## Integrante
 
 - Mariana
