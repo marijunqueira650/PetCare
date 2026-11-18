@@ -4,6 +4,14 @@ const DB = {
   set(key, val) { localStorage.setItem('petcare_' + key, JSON.stringify(val)); }
 };
 
+function dataLocalISO() {
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+  const dia = String(hoje.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+}
+
 // Dados iniciais
 if (!localStorage.getItem('petcare_initialized')) {
   DB.set('clientes', [
@@ -91,7 +99,7 @@ function renderHome() {
   const hojeData = new Date();
   hojeData.setHours(0, 0, 0, 0);
 
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = dataLocalISO();
   const agHoje = agendamentos.filter(a => a.data === hoje);
   const totalVendas = vendas.reduce((s, v) => s + v.total, 0);
 
@@ -490,7 +498,7 @@ function salvarAgendamento() {
   }
 
   if (servico.includes('Banho') || servico.includes('Tosa')) {
-    const hoje = new Date().toISOString().split('T')[0];
+    const hoje = dataLocalISO();
     const temVacina = petObj.vacinas && petObj.vacinas.some(v => {
       const nome = String(v.nome || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
       return nome === 'antirrabica' && v.proxima >= hoje;
@@ -641,7 +649,7 @@ function salvarAtendimento() {
   const atendimentos = DB.get('atendimentos');
   const atendimento = {
     pet, diagnostico, tratamento, valor,
-    data: new Date().toISOString().split('T')[0],
+    data: dataLocalISO(),
     hora: new Date().toTimeString().slice(0, 5),
     veterinario: usuarioAtual.nome
   };
@@ -964,7 +972,7 @@ function finalizarVenda() {
   const venda = {
     id: Date.now(),
     cliente: cpfCliente || null, itens: [...carrinhoAtual], subtotal, desconto, total, pagamento,
-    data: new Date().toISOString().split('T')[0],
+    data: dataLocalISO(),
     hora: new Date().toTimeString().slice(0, 5)
   };
 
@@ -1173,7 +1181,7 @@ function fecharModal() {
 
 // Data padrão: hoje
 document.addEventListener('DOMContentLoaded', () => {
-  const hoje = new Date().toISOString().split('T')[0];
+  const hoje = dataLocalISO();
   const agData = document.getElementById('agData');
   if (agData) agData.value = hoje;
 });
