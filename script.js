@@ -843,7 +843,10 @@ function carregarSelects() {
   const produtos = DB.get('produtos');
   const selectProd = document.getElementById('vendaProduto');
   if (selectProd) {
-    selectProd.innerHTML = produtos.map(p => `<option value="${p.codigo}">${p.nome} - R$ ${p.preco.toFixed(2)} (est: ${p.qtd})</option>`).join('');
+    selectProd.innerHTML = `<option value="">Selecione um produto</option>${produtos.map(p => {
+      const semEstoque = p.qtd <= 0;
+      return `<option value="${p.codigo}" ${semEstoque ? 'disabled' : ''}>${p.nome} - R$ ${p.preco.toFixed(2)} (est: ${p.qtd})${semEstoque ? ' - Sem estoque' : ''}</option>`;
+    }).join('')}`;
   }
 
   const pets = DB.get('pets');
