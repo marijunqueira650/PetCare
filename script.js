@@ -675,13 +675,26 @@ function salvarAtendimento() {
 
 function renderAtendimentos() {
   const atendimentos = DB.get('atendimentos');
+  const busca = (document.getElementById('buscaAtendimento')?.value || '').trim().toLowerCase();
   if (atendimentos.length === 0) {
     document.getElementById('listaAtendimentos').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum atendimento registrado.</p>';
     return;
   }
 
+  const filtrados = atendimentos.filter(a =>
+    String(a.pet || '').toLowerCase().includes(busca)
+    || String(a.diagnostico || '').toLowerCase().includes(busca)
+    || String(a.tratamento || '').toLowerCase().includes(busca)
+    || String(a.veterinario || '').toLowerCase().includes(busca)
+    || String(a.vacina?.nome || '').toLowerCase().includes(busca)
+  );
+  if (filtrados.length === 0) {
+    document.getElementById('listaAtendimentos').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum atendimento encontrado.</p>';
+    return;
+  }
+
   let html = '<table><tr><th>Data</th><th>Pet</th><th>Diagnóstico</th><th>Veterinário</th><th>Valor</th><th>Vacina</th></tr>';
-  atendimentos.sort((a, b) => (b.data + b.hora).localeCompare(a.data + a.hora)).forEach(a => {
+  filtrados.sort((a, b) => (b.data + b.hora).localeCompare(a.data + a.hora)).forEach(a => {
     html += `<tr>
       <td>${a.data} ${a.hora}</td><td>${a.pet}</td><td>${a.diagnostico}</td><td>${a.veterinario}</td>
       <td>R$ ${a.valor.toFixed(2)}</td>

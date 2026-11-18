@@ -305,6 +305,9 @@
           
           <div class="card">
             <h3 class="card-title">Histórico de Atendimentos</h3>
+            <div class="search-bar">
+              <input type="search" id="buscaAtendimento" aria-label="Buscar atendimentos por pet, diagnóstico, tratamento, veterinário ou vacina" placeholder="🔍 Buscar pet, diagnóstico, tratamento, veterinário ou vacina..." oninput="renderAtendimentos()">
+            </div>
             <div id="listaAtendimentos"></div>
           </div>
         </div>
