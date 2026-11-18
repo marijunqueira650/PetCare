@@ -802,9 +802,19 @@ function removerItem(i) {
 function finalizarVenda() {
   if (carrinhoAtual.length === 0) { alert('❌ Carrinho vazio!'); return; }
 
+  const clienteInformado = document.getElementById('vendaCliente').value.trim();
+  const cpfCliente = normalizarCPF(clienteInformado);
+  if (clienteInformado && cpfCliente.length !== 11) {
+    alert('❌ Informe um CPF com 11 dígitos!');
+    return;
+  }
+  if (clienteInformado && !DB.get('clientes').some(c => normalizarCPF(c.cpf) === cpfCliente)) {
+    alert('❌ Não existe cliente cadastrado com este CPF!');
+    return;
+  }
+
   if (!confirm('Confirmar pagamento e finalizar venda?')) return;
 
-  const cliente = document.getElementById('vendaCliente').value.trim() || null;
   const desconto = parseFloat(document.getElementById('vendaDesconto').value) || 0;
   const pagamento = document.getElementById('vendaPagamento').value;
 
@@ -813,7 +823,7 @@ function finalizarVenda() {
 
   const venda = {
     id: Date.now(),
-    cliente: normalizarCPF(cliente) || null, itens: [...carrinhoAtual], subtotal, desconto, total, pagamento,
+    cliente: cpfCliente || null, itens: [...carrinhoAtual], subtotal, desconto, total, pagamento,
     data: new Date().toISOString().split('T')[0],
     hora: new Date().toTimeString().slice(0, 5)
   };
