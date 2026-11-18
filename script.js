@@ -470,12 +470,39 @@ function renderAgendamentos() {
       <td>${a.data}</td><td>${a.horario}</td><td>${a.pet}</td><td>${a.servico}</td><td>${a.profissional}</td>
       <td><span class="badge ${badge}">${a.status}</span></td>
       <td>
-        ${a.status === 'Agendado' ? `<button class="btn btn-small btn-danger" onclick="cancelarAgendamento('${a.criadoEm}')">Cancelar</button>` : ''}
+        ${a.status === 'Agendado' ? `
+          <button class="btn btn-small btn-danger" onclick="cancelarAgendamento('${a.criadoEm}')">Cancelar</button>
+          <button class="btn btn-small btn-success" onclick="concluirAgendamento('${a.criadoEm}')">Concluir</button>
+        ` : ''}
       </td>
     </tr>`;
   });
   html += '</table>';
   document.getElementById('listaAgendamentos').innerHTML = html;
+}
+
+function concluirAgendamento(criadoEm) {
+  const agendamentos = DB.get('agendamentos');
+  const agendamento = agendamentos.find(a => a.criadoEm === criadoEm);
+  if (!agendamento) {
+    alert('❌ Agendamento não encontrado!');
+    return;
+  }
+  if (agendamento.status !== 'Agendado') {
+    alert('❌ Apenas agendamentos ativos podem ser concluídos!');
+    return;
+  }
+
+  const dataAgendamento = new Date(`${agendamento.data}T${agendamento.horario}`);
+  if (Number.isNaN(dataAgendamento.getTime()) || dataAgendamento > new Date()) {
+    alert('❌ Só é possível concluir um agendamento depois do horário marcado!');
+    return;
+  }
+  if (!confirm('Marcar este agendamento como concluído?')) return;
+
+  agendamento.status = 'Concluído';
+  DB.set('agendamentos', agendamentos);
+  atualizarTudo();
 }
 
 function cancelarAgendamento(criadoEm) {
