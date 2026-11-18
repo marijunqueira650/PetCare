@@ -58,3 +58,7 @@ feat: adiciona cadastro de clientes
 fix: corrige validação do agendamento
 docs: atualiza instruções de execução
 ```
+
+## Documentação
+
+Os arquivos dos artigos de análise e projeto ficam na raiz do repositório, junto ao README e aos arquivos da aplicação. O material em PDF atualmente versionado é `PetCareF.pdf`.
