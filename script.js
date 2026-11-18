@@ -63,6 +63,18 @@ document.getElementById('loginForm').addEventListener('submit', function (e) {
 });
 
 function logout() {
+  const vendaEmAndamento = carrinhoAtual.length > 0
+    || document.getElementById('vendaCliente').value.trim() !== ''
+    || Number(document.getElementById('vendaDesconto').value) > 0;
+  if (vendaEmAndamento && !confirm('Deseja sair e descartar os dados da venda em andamento?')) return;
+
+  carrinhoAtual = [];
+  document.getElementById('vendaCliente').value = '';
+  document.getElementById('vendaDesconto').value = '0';
+  document.getElementById('vendaQtd').value = '1';
+  document.getElementById('vendaPagamento').value = 'Dinheiro';
+  renderCarrinho();
+
   usuarioAtual = null;
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
