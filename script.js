@@ -620,6 +620,12 @@ function salvarProduto() {
   if (!codigo || !nome || isNaN(preco)) { alert('❌ Preencha todos os campos!'); return; }
 
   const produtos = DB.get('produtos');
+  const codigoNormalizado = codigo.toLowerCase();
+  if (produtos.some(p => String(p.codigo || '').trim().toLowerCase() === codigoNormalizado)) {
+    alert('❌ Já existe um produto com este código!');
+    return;
+  }
+
   produtos.push({ codigo, nome, preco, qtd: qtd || 0, minimo: minimo || 0 });
   DB.set('produtos', produtos);
 
