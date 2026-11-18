@@ -888,6 +888,7 @@ function finalizarVenda() {
   carrinhoAtual = [];
   document.getElementById('vendaCliente').value = '';
   document.getElementById('vendaDesconto').value = '0';
+  renderCarrinho();
 
   alert(`✅ Venda finalizada! Total: R$ ${total.toFixed(2)} - Pagamento: ${pagamento}`);
   atualizarTudo();
