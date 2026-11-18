@@ -108,11 +108,9 @@ function renderHome() {
   const agendamentos = DB.get('agendamentos');
   const vendas = DB.get('vendas');
   const produtos = DB.get('produtos');
-  const hojeData = new Date();
-  hojeData.setHours(0, 0, 0, 0);
 
-  const hoje = dataLocalISO();
-  const agHoje = agendamentos.filter(a => a.data === hoje);
+  const hoje = new Date().toISOString().split('T')[0];
+  const agHoje = agendamentos.filter(a => a.data === hoje && a.status !== 'Cancelado');
   const totalVendas = vendas.reduce((s, v) => s + v.total, 0);
 
   document.getElementById('statsGrid').innerHTML = `
@@ -133,32 +131,6 @@ function renderHome() {
     document.getElementById('todayAppointments').innerHTML = html;
   }
 
-  const dosesPendentes = [];
-  pets.forEach(pet => {
-    (pet.vacinas || []).forEach(vacina => {
-      if (!vacina.proxima) return;
-      const dataProxima = new Date(`${vacina.proxima}T00:00:00`);
-      if (Number.isNaN(dataProxima.getTime())) return;
-      dosesPendentes.push({ pet: pet.nome, vacina: vacina.nome, data: dataProxima });
-    });
-  });
-  dosesPendentes.sort((a, b) => a.data - b.data);
-
-  if (dosesPendentes.length === 0) {
-    document.getElementById('vaccineAlerts').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhuma próxima dose registrada.</p>';
-  } else {
-    let html = '<table><tr><th>Pet</th><th>Vacina</th><th>Próxima dose</th><th>Status</th></tr>';
-    dosesPendentes.forEach(dose => {
-      const atrasada = dose.data < hojeData;
-      const hoje = dose.data.getTime() === hojeData.getTime();
-      const status = atrasada ? 'Atrasada' : hoje ? 'Hoje' : 'Próxima';
-      const badge = atrasada ? 'badge-danger' : hoje ? 'badge-warning' : 'badge-info';
-      html += `<tr><td>${dose.pet}</td><td>${dose.vacina || '-'}</td><td>${dose.data.toLocaleDateString('pt-BR')}</td><td><span class="badge ${badge}">${status}</span></td></tr>`;
-    });
-    html += '</table>';
-    document.getElementById('vaccineAlerts').innerHTML = html;
-  }
-
   const alertas = produtos.filter(p => p.qtd <= p.minimo);
   if (alertas.length === 0) {
     document.getElementById('stockAlerts').innerHTML = '<div class="alert alert-success">✅ Todos os produtos estão com estoque adequado.</div>';
@@ -172,66 +144,17 @@ function renderHome() {
 }
 
 // ============ CLIENTES ============
-function normalizarCPF(cpf) {
-  return String(cpf || '').replace(/\D/g, '');
-}
-
-function formatarCPF(cpf) {
-  const digitos = normalizarCPF(cpf);
-  if (digitos.length !== 11) return cpf;
-  return digitos.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-}
-
-function cpfValido(cpf) {
-  const digitos = normalizarCPF(cpf);
-  if (digitos.length !== 11 || /^(\d)\1{10}$/.test(digitos)) return false;
-
-  const calcularDigito = (base, pesoInicial) => {
-    let soma = 0;
-    for (let i = 0; i < base.length; i++) {
-      soma += Number(base[i]) * (pesoInicial - i);
-    }
-    const resto = soma % 11;
-    return resto < 2 ? 0 : 11 - resto;
-  };
-
-  return calcularDigito(digitos.slice(0, 9), 10) === Number(digitos[9])
-    && calcularDigito(digitos.slice(0, 10), 11) === Number(digitos[10]);
-}
-
-function emailValido(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function telefoneValido(telefone) {
-  if (!/^[\d\s()+.-]+$/.test(telefone)) return false;
-
-  const digitos = telefone.replace(/\D/g, '');
-  const numeroNacional = digitos.startsWith('55') && [12, 13].includes(digitos.length)
-    ? digitos.slice(2)
-    : digitos;
-
-  return [10, 11].includes(numeroNacional.length);
-}
-
 function salvarCliente() {
   const nome = document.getElementById('cliNome').value.trim();
-  const cpfInformado = document.getElementById('cliCpf').value.trim();
-  const cpf = normalizarCPF(cpfInformado);
+  const cpf = document.getElementById('cliCpf').value.trim();
   const telefone = document.getElementById('cliTelefone').value.trim();
   const email = document.getElementById('cliEmail').value.trim();
   const endereco = document.getElementById('cliEndereco').value.trim();
 
-  if (!nome || !cpfInformado) { alert('❌ Nome e CPF são obrigatórios!'); return; }
-  if (!cpfValido(cpfInformado)) { alert('❌ Informe um CPF válido!'); return; }
-  if (email && !emailValido(email)) { alert('❌ Informe um e-mail válido!'); return; }
-  if (telefone && !telefoneValido(telefone)) {
-    alert('❌ Informe um telefone válido com DDD!');
-    return;
-  }
+  if (!nome || !cpf) { alert('❌ Nome e CPF são obrigatórios!'); return; }
 
   const clientes = DB.get('clientes');
-  if (clientes.some(c => normalizarCPF(c.cpf) === cpf)) {
+  if (clientes.some(c => c.cpf === cpf)) {
     alert('❌ Já existe um cliente com este CPF! (RN01)');
     return;
   }
@@ -247,12 +170,7 @@ function salvarCliente() {
 function renderClientes() {
   const clientes = DB.get('clientes');
   const busca = (document.getElementById('buscaCliente')?.value || '').toLowerCase();
-  const buscaCPF = normalizarCPF(busca);
-  const buscaTelefone = busca.replace(/\D/g, '');
-  const filtrados = clientes.filter(c => c.nome.toLowerCase().includes(busca)
-    || (buscaCPF && normalizarCPF(c.cpf).includes(buscaCPF))
-    || (c.email || '').toLowerCase().includes(busca)
-    || (buscaTelefone && String(c.telefone || '').replace(/\D/g, '').includes(buscaTelefone)));
+  const filtrados = clientes.filter(c => c.nome.toLowerCase().includes(busca) || c.cpf.includes(busca));
 
   if (filtrados.length === 0) {
     document.getElementById('listaClientes').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum cliente encontrado.</p>';
@@ -262,7 +180,7 @@ function renderClientes() {
   let html = '<table><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>E-mail</th><th>Ações</th></tr>';
   filtrados.forEach(c => {
     html += `<tr>
-      <td>${c.nome}</td><td>${formatarCPF(c.cpf)}</td><td>${c.telefone || '-'}</td><td>${c.email || '-'}</td>
+      <td>${c.nome}</td><td>${c.cpf}</td><td>${c.telefone || '-'}</td><td>${c.email || '-'}</td>
       <td>
         <button class="btn btn-small btn-secondary" onclick="verHistoricoCliente('${c.cpf}')">📋 Histórico</button>
         <button class="btn btn-small btn-danger" onclick="excluirCliente('${c.cpf}')">🗑️</button>
@@ -274,25 +192,18 @@ function renderClientes() {
 }
 
 function excluirCliente(cpf) {
-  const cpfNormalizado = normalizarCPF(cpf);
-  const temPetsVinculados = DB.get('pets').some(p => normalizarCPF(p.tutor) === cpfNormalizado);
-  if (temPetsVinculados) {
-    alert('Não é possível excluir este cliente enquanto houver pets vinculados. Remova os pets antes de excluir o cliente.');
-    return;
-  }
-
   if (!confirm('Excluir este cliente?')) return;
-  DB.set('clientes', DB.get('clientes').filter(c => normalizarCPF(c.cpf) !== cpfNormalizado));
+  DB.set('clientes', DB.get('clientes').filter(c => c.cpf !== cpf));
   atualizarTudo();
 }
 
 function verHistoricoCliente(cpf) {
-  const cliente = DB.get('clientes').find(c => normalizarCPF(c.cpf) === normalizarCPF(cpf));
-  const pets = DB.get('pets').filter(p => normalizarCPF(p.tutor) === normalizarCPF(cpf));
+  const cliente = DB.get('clientes').find(c => c.cpf === cpf);
+  const pets = DB.get('pets').filter(p => p.tutor === cpf);
   const atendimentos = DB.get('atendimentos').filter(a => pets.some(p => p.nome === a.pet));
   const agendamentos = DB.get('agendamentos').filter(a => pets.some(p => p.nome === a.pet));
 
-  let html = `<p><strong>Cliente:</strong> ${cliente.nome}</p><p><strong>CPF:</strong> ${formatarCPF(cliente.cpf)}</p><hr style="margin:10px 0; border:none; border-top:1px solid #e5e7eb;">`;
+  let html = `<p><strong>Cliente:</strong> ${cliente.nome}</p><p><strong>CPF:</strong> ${cliente.cpf}</p><hr style="margin:10px 0; border:none; border-top:1px solid #e5e7eb;">`;
   html += `<h4 style="color:#2563eb; margin:12px 0;">🐾 Pets (${pets.length})</h4>`;
   pets.forEach(p => { html += `<p>• ${p.nome} (${p.especie} - ${p.raca})</p>`; });
   html += `<h4 style="color:#2563eb; margin:12px 0;">📅 Agendamentos (${agendamentos.length})</h4>`;
@@ -306,38 +217,22 @@ function verHistoricoCliente(cpf) {
 // ============ PETS ============
 function salvarPet() {
   const nome = document.getElementById('petNome').value.trim();
-  const tutor = normalizarCPF(document.getElementById('petTutor').value.trim());
+  const tutor = document.getElementById('petTutor').value.trim();
   const especie = document.getElementById('petEspecie').value;
   const raca = document.getElementById('petRaca').value.trim();
   const nascimento = document.getElementById('petNasc').value;
-  const pesoInformado = document.getElementById('petPeso').value;
-  const peso = pesoInformado === '' ? null : Number(pesoInformado);
+  const peso = parseFloat(document.getElementById('petPeso').value);
 
   if (!nome || !tutor) { alert('❌ Nome e tutor são obrigatórios!'); return; }
 
-  if (nascimento) {
-    const dataNascimento = new Date(`${nascimento}T00:00:00`);
-    const hoje = new Date();
-    hoje.setHours(0, 0, 0, 0);
-    if (Number.isNaN(dataNascimento.getTime()) || dataNascimento > hoje) {
-      alert('❌ A data de nascimento não pode estar no futuro!');
-      return;
-    }
-  }
-
-  if (pesoInformado !== '' && (!Number.isFinite(peso) || peso <= 0)) {
-    alert('❌ O peso deve ser maior que zero!');
-    return;
-  }
-
   const clientes = DB.get('clientes');
-  if (!clientes.some(c => normalizarCPF(c.cpf) === tutor)) {
+  if (!clientes.some(c => c.cpf === tutor)) {
     alert('❌ Tutor não encontrado! Cadastre o cliente primeiro. (RN02)');
     return;
   }
 
   const pets = DB.get('pets');
-  pets.push({ nome, tutor, especie, raca, nascimento: nascimento || null, peso, vacinas: [] });
+  pets.push({ nome, tutor, especie, raca, nascimento, peso, vacinas: [] });
   DB.set('pets', pets);
 
   ['petNome', 'petTutor', 'petRaca', 'petNasc', 'petPeso'].forEach(id => document.getElementById(id).value = '');
@@ -349,14 +244,9 @@ function renderPets() {
   const pets = DB.get('pets');
   const clientes = DB.get('clientes');
   const busca = (document.getElementById('buscaPet')?.value || '').toLowerCase();
-  const buscaCPF = normalizarCPF(busca);
-  const especie = document.getElementById('filtroEspecie')?.value || '';
   const filtrados = pets.filter(p => {
-    const tutor = clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(p.tutor));
-    const correspondeBusca = p.nome.toLowerCase().includes(busca)
-      || (tutor && tutor.nome.toLowerCase().includes(busca))
-      || (buscaCPF && normalizarCPF(p.tutor).includes(buscaCPF));
-    return correspondeBusca && (!especie || p.especie === especie);
+    const tutor = clientes.find(c => c.cpf === p.tutor);
+    return p.nome.toLowerCase().includes(busca) || (tutor && tutor.nome.toLowerCase().includes(busca));
   });
 
   if (filtrados.length === 0) {
@@ -366,7 +256,7 @@ function renderPets() {
 
   let html = '<table><tr><th>Nome</th><th>Espécie</th><th>Raça</th><th>Tutor</th><th>Peso</th><th>Vacinas</th><th>Ações</th></tr>';
   filtrados.forEach(p => {
-    const tutor = clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(p.tutor));
+    const tutor = clientes.find(c => c.cpf === p.tutor);
     html += `<tr>
       <td>${p.nome}</td><td>${p.especie}</td><td>${p.raca || '-'}</td>
       <td>${tutor ? tutor.nome : p.tutor}</td><td>${p.peso || '-'} kg</td>
@@ -417,46 +307,23 @@ function verHistoricoPet(nome) {
 
 // ============ AGENDAMENTOS ============
 function carregarPetsCliente() {
-  const cpf = normalizarCPF(document.getElementById('agCliente').value.trim());
-  const pets = DB.get('pets').filter(p => normalizarCPF(p.tutor) === cpf);
+  const cpf = document.getElementById('agCliente').value.trim();
+  const pets = DB.get('pets').filter(p => p.tutor === cpf);
   const select = document.getElementById('agPet');
   if (pets.length === 0) {
     select.innerHTML = '<option>Nenhum pet encontrado</option>';
   } else {
     select.innerHTML = pets.map(p => `<option value="${p.nome}">${p.nome} (${p.especie})</option>`).join('');
   }
-  renderHorarios();
-}
-
-function atualizarProfissionais() {
-  const consulta = document.getElementById('agServico').value === 'Consulta';
-  const select = document.getElementById('agProfissional');
-  const opcoes = Array.from(select.options);
-
-  opcoes.forEach(opcao => {
-    const veterinario = opcao.value.includes('(Vet)');
-    opcao.hidden = consulta !== veterinario;
-    opcao.disabled = opcao.hidden;
-  });
-
-  if (select.selectedOptions[0]?.hidden) {
-    select.value = opcoes.find(opcao => !opcao.hidden).value;
-  }
-  renderHorarios();
 }
 
 function renderHorarios() {
   const data = document.getElementById('agData').value;
   const profissional = document.getElementById('agProfissional').value;
-  const cpf = normalizarCPF(document.getElementById('agCliente').value);
-  const pet = document.getElementById('agPet').value;
   const agendamentos = DB.get('agendamentos');
 
   const horarios = ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
-  const ocupados = agendamentos
-    .filter(a => a.data === data && a.status !== 'Cancelado'
-      && (a.profissional === profissional || (a.pet === pet && normalizarCPF(a.cliente) === cpf)))
-    .map(a => a.horario);
+  const ocupados = agendamentos.filter(a => a.data === data && a.profissional === profissional && a.status !== 'Cancelado').map(a => a.horario);
 
   let html = '';
   horarios.forEach(h => {
@@ -474,7 +341,7 @@ function selecionarHorario(h, el) {
 }
 
 function salvarAgendamento() {
-  const cpf = normalizarCPF(document.getElementById('agCliente').value.trim());
+  const cpf = document.getElementById('agCliente').value.trim();
   const pet = document.getElementById('agPet').value;
   const servico = document.getElementById('agServico').value;
   const profissional = document.getElementById('agProfissional').value;
@@ -485,36 +352,11 @@ function salvarAgendamento() {
     return;
   }
 
-  const petObj = DB.get('pets').find(p => p.nome === pet && normalizarCPF(p.tutor) === cpf);
-  if (!petObj) {
-    alert('❌ O pet selecionado não foi encontrado para o tutor informado!');
-    return;
-  }
-
-  const profissionalVeterinario = profissional.includes('(Vet)');
-  if (servico === 'Consulta' && !profissionalVeterinario) {
-    alert('❌ Consultas devem ser agendadas com um veterinário!');
-    return;
-  }
-  if (['Banho', 'Tosa', 'Banho e Tosa'].includes(servico) && profissionalVeterinario) {
-    alert('❌ Banho e tosa devem ser agendados com um tosador!');
-    return;
-  }
-
-  const dataAgendamento = new Date(`${data}T00:00:00`);
-  const hoje = new Date();
-  hoje.setHours(0, 0, 0, 0);
-  if (Number.isNaN(dataAgendamento.getTime()) || dataAgendamento < hoje) {
-    alert('❌ Não é possível agendar em uma data passada!');
-    return;
-  }
+  const petObj = DB.get('pets').find(p => p.nome === pet);
 
   if (servico.includes('Banho') || servico.includes('Tosa')) {
-    const hoje = dataLocalISO();
-    const temVacina = petObj.vacinas && petObj.vacinas.some(v => {
-      const nome = String(v.nome || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-      return nome === 'antirrabica' && v.proxima >= hoje;
-    });
+    const hoje = new Date().toISOString().split('T')[0];
+    const temVacina = petObj.vacinas.some(v => v.nome === 'Antirrábica' && v.proxima >= hoje);
     if (!temVacina) {
       alert('❌ Este pet não possui vacina antirrábica em dia! (RN05)');
       return;
@@ -522,14 +364,8 @@ function salvarAgendamento() {
   }
 
   const agendamentos = DB.get('agendamentos');
-  if (agendamentos.some(a => a.data === data && a.horario === horarioSelecionado
-    && a.profissional === profissional && a.status !== 'Cancelado')) {
+  if (agendamentos.some(a => a.data === data && a.horario === horarioSelecionado && a.profissional === profissional && a.status !== 'Cancelado')) {
     alert('❌ Este horário já está ocupado para este profissional! (RN03)');
-    return;
-  }
-  if (agendamentos.some(a => a.data === data && a.horario === horarioSelecionado
-    && a.pet === pet && normalizarCPF(a.cliente) === cpf && a.status !== 'Cancelado')) {
-    alert('❌ Este pet já possui um agendamento neste horário!');
     return;
   }
 
@@ -549,76 +385,24 @@ function salvarAgendamento() {
 
 function renderAgendamentos() {
   const agendamentos = DB.get('agendamentos');
-  const clientes = DB.get('clientes');
-  const inicio = document.getElementById('filtroAgendaInicio').value;
-  const fim = document.getElementById('filtroAgendaFim').value;
-  const status = document.getElementById('filtroAgendaStatus').value;
-  const profissional = document.getElementById('filtroAgendaProfissional').value.trim().toLowerCase();
-  const busca = (document.getElementById('filtroAgendaBusca')?.value || '').trim().toLowerCase();
-  const buscaCPF = normalizarCPF(busca);
-  if (inicio && fim && inicio > fim) {
-    document.getElementById('listaAgendamentos').innerHTML = '<p style="color:#dc2626; text-align:center; padding:15px;">A data inicial não pode ser posterior à data final.</p>';
-    return;
-  }
-
-  const filtrados = agendamentos.filter(a => {
-    const cliente = clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(a.cliente));
-    const correspondeBusca = !busca
-      || String(a.pet || '').toLowerCase().includes(busca)
-      || (cliente && cliente.nome.toLowerCase().includes(busca))
-      || (buscaCPF && normalizarCPF(a.cliente).includes(buscaCPF));
-    return correspondeBusca
-      && (!inicio || a.data >= inicio)
-      && (!fim || a.data <= fim)
-      && (!status || a.status === status)
-      && (!profissional || String(a.profissional || '').toLowerCase().includes(profissional));
-  });
-
-  if (filtrados.length === 0) {
-    document.getElementById('listaAgendamentos').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum agendamento encontrado.</p>';
+  if (agendamentos.length === 0) {
+    document.getElementById('listaAgendamentos').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum agendamento.</p>';
     return;
   }
 
   let html = '<table><tr><th>Data</th><th>Horário</th><th>Pet</th><th>Serviço</th><th>Profissional</th><th>Status</th><th>Ações</th></tr>';
-  filtrados.sort((a, b) => (b.data + b.horario).localeCompare(a.data + a.horario)).forEach(a => {
+  agendamentos.sort((a, b) => (b.data + b.horario).localeCompare(a.data + a.horario)).forEach(a => {
     const badge = a.status === 'Agendado' ? 'badge-info' : a.status === 'Cancelado' ? 'badge-danger' : 'badge-success';
     html += `<tr>
       <td>${a.data}</td><td>${a.horario}</td><td>${a.pet}</td><td>${a.servico}</td><td>${a.profissional}</td>
       <td><span class="badge ${badge}">${a.status}</span></td>
       <td>
-        ${a.status === 'Agendado' ? `
-          <button class="btn btn-small btn-danger" onclick="cancelarAgendamento('${a.criadoEm}')">Cancelar</button>
-          <button class="btn btn-small btn-success" onclick="concluirAgendamento('${a.criadoEm}')">Concluir</button>
-        ` : ''}
+        ${a.status === 'Agendado' ? `<button class="btn btn-small btn-danger" onclick="cancelarAgendamento('${a.criadoEm}')">Cancelar</button>` : ''}
       </td>
     </tr>`;
   });
   html += '</table>';
   document.getElementById('listaAgendamentos').innerHTML = html;
-}
-
-function concluirAgendamento(criadoEm) {
-  const agendamentos = DB.get('agendamentos');
-  const agendamento = agendamentos.find(a => a.criadoEm === criadoEm);
-  if (!agendamento) {
-    alert('❌ Agendamento não encontrado!');
-    return;
-  }
-  if (agendamento.status !== 'Agendado') {
-    alert('❌ Apenas agendamentos ativos podem ser concluídos!');
-    return;
-  }
-
-  const dataAgendamento = new Date(`${agendamento.data}T${agendamento.horario}`);
-  if (Number.isNaN(dataAgendamento.getTime()) || dataAgendamento > new Date()) {
-    alert('❌ Só é possível concluir um agendamento depois do horário marcado!');
-    return;
-  }
-  if (!confirm('Marcar este agendamento como concluído?')) return;
-
-  agendamento.status = 'Concluído';
-  DB.set('agendamentos', agendamentos);
-  atualizarTudo();
 }
 
 function cancelarAgendamento(criadoEm) {
@@ -654,19 +438,17 @@ function salvarAtendimento() {
   const pet = document.getElementById('atPet').value;
   const diagnostico = document.getElementById('atDiagnostico').value.trim();
   const tratamento = document.getElementById('atTratamento').value.trim();
-  const valorInformado = document.getElementById('atValor').value;
-  const valor = valorInformado === '' ? 0 : Number(valorInformado);
+  const valor = parseFloat(document.getElementById('atValor').value) || 0;
 
   if (!pet || !diagnostico) { alert('❌ Pet e diagnóstico são obrigatórios!'); return; }
-  if (!Number.isFinite(valor) || valor < 0) {
-    alert('❌ O valor do atendimento não pode ser negativo!');
-    return;
-  }
+
+  const pets = DB.get('pets');
+  const petObj = pets.find(p => p.nome === pet);
 
   const atendimentos = DB.get('atendimentos');
   const atendimento = {
     pet, diagnostico, tratamento, valor,
-    data: dataLocalISO(),
+    data: new Date().toISOString().split('T')[0],
     hora: new Date().toTimeString().slice(0, 5),
     veterinario: usuarioAtual.nome
   };
@@ -679,17 +461,8 @@ function salvarAtendimento() {
       alert('❌ Preencha todos os dados da vacina! (RN10)');
       return;
     }
-    const dataAplicacao = new Date(`${atendimento.data}T00:00:00`);
-    const proximaDose = new Date(`${vacProxima}T00:00:00`);
-    if (Number.isNaN(proximaDose.getTime()) || proximaDose <= dataAplicacao) {
-      alert('❌ A próxima dose deve ser posterior à data da aplicação!');
-      return;
-    }
-
     atendimento.vacina = { nome: vacNome, lote: vacLote, data: atendimento.data, proxima: vacProxima };
 
-    const pets = DB.get('pets');
-    const petObj = pets.find(p => p.nome === pet);
     if (!petObj.vacinas) petObj.vacinas = [];
     petObj.vacinas.push(atendimento.vacina);
     DB.set('pets', pets);
@@ -708,26 +481,13 @@ function salvarAtendimento() {
 
 function renderAtendimentos() {
   const atendimentos = DB.get('atendimentos');
-  const busca = (document.getElementById('buscaAtendimento')?.value || '').trim().toLowerCase();
   if (atendimentos.length === 0) {
     document.getElementById('listaAtendimentos').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum atendimento registrado.</p>';
     return;
   }
 
-  const filtrados = atendimentos.filter(a =>
-    String(a.pet || '').toLowerCase().includes(busca)
-    || String(a.diagnostico || '').toLowerCase().includes(busca)
-    || String(a.tratamento || '').toLowerCase().includes(busca)
-    || String(a.veterinario || '').toLowerCase().includes(busca)
-    || String(a.vacina?.nome || '').toLowerCase().includes(busca)
-  );
-  if (filtrados.length === 0) {
-    document.getElementById('listaAtendimentos').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum atendimento encontrado.</p>';
-    return;
-  }
-
   let html = '<table><tr><th>Data</th><th>Pet</th><th>Diagnóstico</th><th>Veterinário</th><th>Valor</th><th>Vacina</th></tr>';
-  filtrados.sort((a, b) => (b.data + b.hora).localeCompare(a.data + a.hora)).forEach(a => {
+  atendimentos.sort((a, b) => (b.data + b.hora).localeCompare(a.data + a.hora)).forEach(a => {
     html += `<tr>
       <td>${a.data} ${a.hora}</td><td>${a.pet}</td><td>${a.diagnostico}</td><td>${a.veterinario}</td>
       <td>R$ ${a.valor.toFixed(2)}</td>
@@ -742,35 +502,14 @@ function renderAtendimentos() {
 function salvarProduto() {
   const codigo = document.getElementById('prodCodigo').value.trim();
   const nome = document.getElementById('prodNome').value.trim();
-  const precoInformado = document.getElementById('prodPreco').value;
-  const quantidadeInformada = document.getElementById('prodQtd').value;
-  const minimoInformado = document.getElementById('prodMin').value;
-  const preco = Number(precoInformado);
-  const qtd = quantidadeInformada === '' ? 0 : Number(quantidadeInformada);
-  const minimo = minimoInformado === '' ? 0 : Number(minimoInformado);
+  const preco = parseFloat(document.getElementById('prodPreco').value);
+  const qtd = parseInt(document.getElementById('prodQtd').value);
+  const minimo = parseInt(document.getElementById('prodMin').value);
 
-  if (!codigo || !nome || precoInformado === '') { alert('❌ Código, nome e preço são obrigatórios!'); return; }
-  if (!Number.isFinite(preco) || preco <= 0) {
-    alert('❌ O preço do produto deve ser maior que zero!');
-    return;
-  }
-  if (!Number.isInteger(qtd) || qtd < 0) {
-    alert('❌ A quantidade em estoque deve ser um número inteiro igual ou maior que zero!');
-    return;
-  }
-  if (!Number.isInteger(minimo) || minimo < 0) {
-    alert('❌ O estoque mínimo deve ser um número inteiro igual ou maior que zero!');
-    return;
-  }
+  if (!codigo || !nome) { alert('❌ Código e nome são obrigatórios!'); return; }
 
   const produtos = DB.get('produtos');
-  const codigoNormalizado = codigo.toLowerCase();
-  if (produtos.some(p => String(p.codigo || '').trim().toLowerCase() === codigoNormalizado)) {
-    alert('❌ Já existe um produto com este código!');
-    return;
-  }
-
-  produtos.push({ codigo, nome, preco, qtd: qtd || 0, minimo: minimo || 0 });
+  produtos.push({ codigo, nome, preco, qtd, minimo });
   DB.set('produtos', produtos);
 
   ['prodCodigo', 'prodNome', 'prodPreco', 'prodQtd', 'prodMin'].forEach(id => document.getElementById(id).value = '');
@@ -781,18 +520,10 @@ function salvarProduto() {
 function renderProdutos() {
   const produtos = DB.get('produtos');
   const busca = (document.getElementById('buscaProduto')?.value || '').toLowerCase();
-  const filtroEstoque = document.getElementById('filtroEstoque')?.value || '';
-  const filtrados = produtos.filter(p => {
-    const correspondeBusca = p.nome.toLowerCase().includes(busca) || p.codigo.toLowerCase().includes(busca);
-    const correspondeEstoque = !filtroEstoque
-      || (filtroEstoque === 'normal' && p.qtd > p.minimo)
-      || (filtroEstoque === 'baixo' && p.qtd > 0 && p.qtd <= p.minimo)
-      || (filtroEstoque === 'sem_estoque' && p.qtd === 0);
-    return correspondeBusca && correspondeEstoque;
-  });
+  const filtrados = produtos.filter(p => p.nome.toLowerCase().includes(busca) || p.codigo.toLowerCase().includes(busca));
 
   if (filtrados.length === 0) {
-    document.getElementById('listaProdutos').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum produto encontrado.</p>';
+    document.getElementById('listaProdutos').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhum produto.</p>';
     return;
   }
 
@@ -820,20 +551,10 @@ function renderProdutos() {
 function ajustarEstoque(codigo) {
   const qtd = prompt('Nova quantidade em estoque:');
   if (qtd === null) return;
-  const quantidadeInformada = qtd.trim();
-  if (!/^\d+$/.test(quantidadeInformada)) {
-    alert('❌ Informe uma quantidade inteira igual ou maior que zero!');
-    return;
-  }
-  const novaQuantidade = Number(quantidadeInformada);
-  if (!Number.isSafeInteger(novaQuantidade)) {
-    alert('❌ A quantidade informada está fora do limite permitido!');
-    return;
-  }
 
   const produtos = DB.get('produtos');
   const p = produtos.find(p => p.codigo === codigo);
-  p.qtd = novaQuantidade;
+  p.qtd = parseInt(qtd);
   DB.set('produtos', produtos);
 
   if (p.qtd <= p.minimo) {
@@ -873,21 +594,9 @@ function mostrarPrecoProduto() { }
 function adicionarItemVenda() {
   const codigo = document.getElementById('vendaProduto').value;
   const qtd = Number(document.getElementById('vendaQtd').value);
-  if (!codigo) {
-    alert('❌ Selecione um produto antes de adicionar ao carrinho!');
-    return;
-  }
-  if (!Number.isSafeInteger(qtd) || qtd < 1) {
-    alert('❌ A quantidade deve ser um número inteiro maior que zero!');
-    return;
-  }
 
   const produtos = DB.get('produtos');
   const prod = produtos.find(p => p.codigo === codigo);
-  if (!prod) {
-    alert('❌ Produto não encontrado! Atualize a lista e tente novamente.');
-    return;
-  }
 
   const jaNoCarrinho = carrinhoAtual.find(i => i.codigo === codigo);
   const qtdJa = jaNoCarrinho ? jaNoCarrinho.qtd : 0;
@@ -936,15 +645,13 @@ function renderCarrinho() {
 document.addEventListener('input', function (e) {
   if (e.target.id === 'vendaDesconto') {
     const val = Number(e.target.value);
-    const gerente = usuarioAtual?.perfil === 'Gerente';
-    const limite = gerente ? 100 : 10;
-    if (!Number.isFinite(val) || val < 0 || val > limite) {
-      if (val > 10 && !gerente) {
-        alert('❌ Somente um gerente pode aplicar desconto acima de 10%!');
-      } else {
-        alert('❌ O desconto deve estar entre 0% e 100%!');
+    if (!Number.isFinite(val) || val < 0 || val > 100) {
+      alert('❌ O desconto deve estar entre 0% e 100%.');
+      e.target.value = '0';
+    } else if (val > 10 && usuarioAtual?.perfil !== 'Gerente') {
+      if (!confirm('Desconto acima de 10% exige autorização do gerente. Confirmar? (RN08)')) {
+        e.target.value = 10;
       }
-      e.target.value = Number.isFinite(val) ? String(Math.max(0, Math.min(limite, val))) : '0';
     }
     renderCarrinho();
   }
@@ -958,51 +665,26 @@ function removerItem(i) {
 function finalizarVenda() {
   if (carrinhoAtual.length === 0) { alert('❌ Carrinho vazio!'); return; }
 
+  const cliente = document.getElementById('vendaCliente').value.trim() || null;
   const desconto = Number(document.getElementById('vendaDesconto').value);
   if (!Number.isFinite(desconto) || desconto < 0 || desconto > 100) {
-    alert('❌ O desconto deve estar entre 0% e 100%!');
+    alert('❌ O desconto deve estar entre 0% e 100%.');
     return;
-  }
-  if (desconto > 10 && usuarioAtual.perfil !== 'Gerente') {
-    alert('❌ Somente um gerente pode aplicar desconto acima de 10%!');
-    return;
-  }
-
-  const clienteInformado = document.getElementById('vendaCliente').value.trim();
-  const cpfCliente = normalizarCPF(clienteInformado);
-  if (clienteInformado && cpfCliente.length !== 11) {
-    alert('❌ Informe um CPF com 11 dígitos!');
-    return;
-  }
-  if (clienteInformado && !DB.get('clientes').some(c => normalizarCPF(c.cpf) === cpfCliente)) {
-    alert('❌ Não existe cliente cadastrado com este CPF!');
-    return;
-  }
-
-  if (!confirm('Confirmar pagamento e finalizar venda?')) return;
-
-  const produtos = DB.get('produtos');
-  for (const item of carrinhoAtual) {
-    const produto = produtos.find(p => p.codigo === item.codigo);
-    if (!produto) {
-      alert(`❌ O produto "${item.nome}" não está mais cadastrado!`);
-      return;
-    }
-    if (!Number.isSafeInteger(produto.qtd) || produto.qtd < item.qtd) {
-      alert(`❌ Estoque insuficiente para "${item.nome}". Atualize o estoque antes de finalizar!`);
-      return;
-    }
   }
 
   const pagamento = document.getElementById('vendaPagamento').value;
+
+  const produtos = DB.get('produtos');
+
+  if (!confirm('Confirmar pagamento e finalizar venda?')) return;
 
   const subtotal = carrinhoAtual.reduce((s, i) => s + i.preco * i.qtd, 0);
   const total = subtotal * (1 - desconto / 100);
 
   const venda = {
     id: Date.now(),
-    cliente: cpfCliente || null, itens: [...carrinhoAtual], subtotal, desconto, total, pagamento,
-    data: dataLocalISO(),
+    cliente, itens: [...carrinhoAtual], subtotal, desconto, total, pagamento,
+    data: new Date().toISOString().split('T')[0],
     hora: new Date().toTimeString().slice(0, 5)
   };
 
@@ -1016,45 +698,21 @@ function finalizarVenda() {
   vendas.push(venda);
   DB.set('vendas', vendas);
 
-  carrinhoAtual = [];
-  document.getElementById('vendaCliente').value = '';
-  document.getElementById('vendaDesconto').value = '0';
-  renderCarrinho();
-
   alert(`✅ Venda finalizada! Total: R$ ${total.toFixed(2)} - Pagamento: ${pagamento}`);
   atualizarTudo();
 }
 
 function renderVendas() {
   const vendas = DB.get('vendas');
-  const clientes = DB.get('clientes');
-  const busca = (document.getElementById('buscaVenda')?.value || '').trim().toLowerCase();
-  const buscaCPF = normalizarCPF(busca);
   if (vendas.length === 0) {
     document.getElementById('listaVendas').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhuma venda registrada.</p>';
     return;
   }
 
-  const filtradas = vendas.filter(v => {
-    const cliente = v.cliente
-      ? clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(v.cliente))
-      : null;
-    const nomeCliente = cliente?.nome || (v.cliente ? formatarCPF(v.cliente) : 'Avulsa');
-    return nomeCliente.toLowerCase().includes(busca)
-      || (buscaCPF && normalizarCPF(v.cliente).includes(buscaCPF))
-      || String(v.pagamento || '').toLowerCase().includes(busca)
-      || (v.itens || []).some(item => String(item.nome || '').toLowerCase().includes(busca)
-        || String(item.codigo || '').toLowerCase().includes(busca));
-  });
-  if (filtradas.length === 0) {
-    document.getElementById('listaVendas').innerHTML = '<p style="color:#64748b; text-align:center; padding:15px;">Nenhuma venda encontrada.</p>';
-    return;
-  }
-
   let html = '<table><tr><th>Data</th><th>Cliente</th><th>Itens</th><th>Desconto</th><th>Total</th><th>Pagamento</th></tr>';
-  filtradas.sort((a, b) => (b.data + b.hora).localeCompare(a.data + a.hora)).forEach(v => {
+  vendas.sort((a, b) => (b.data + b.hora).localeCompare(a.data + a.hora)).forEach(v => {
     const cliente = v.cliente
-      ? (clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(v.cliente))?.nome || formatarCPF(v.cliente))
+      ? (DB.get('clientes').find(c => c.cpf === v.cliente)?.nome || v.cliente)
       : 'Avulsa';
     html += `<tr>
       <td>${v.data} ${v.hora}</td><td>${cliente}</td>
@@ -1068,90 +726,28 @@ function renderVendas() {
   document.getElementById('listaVendas').innerHTML = html;
 }
 
-function exportarVendasCSV() {
-  const vendas = DB.get('vendas');
-  if (vendas.length === 0) {
-    alert('❌ Não há vendas para exportar!');
-    return;
-  }
-
-  const clientes = DB.get('clientes');
-  const linhas = [[
-    'ID da venda', 'Data', 'Hora', 'Cliente', 'CPF', 'Pagamento',
-    'Código do produto', 'Produto', 'Quantidade', 'Preço unitário',
-    'Total do item', 'Desconto (%)', 'Subtotal da venda', 'Total da venda'
-  ]];
-
-  vendas.forEach(venda => {
-    const cliente = venda.cliente
-      ? clientes.find(c => normalizarCPF(c.cpf) === normalizarCPF(venda.cliente))
-      : null;
-    (Array.isArray(venda.itens) ? venda.itens : []).forEach(item => {
-      linhas.push([
-        venda.id, venda.data, venda.hora, cliente?.nome || (venda.cliente ? 'Cliente não encontrado' : 'Avulsa'),
-        venda.cliente ? formatarCPF(venda.cliente) : '', venda.pagamento,
-        item.codigo, item.nome, item.qtd, Number(item.preco).toFixed(2),
-        (Number(item.preco) * Number(item.qtd)).toFixed(2), venda.desconto,
-        Number(venda.subtotal).toFixed(2), Number(venda.total).toFixed(2)
-      ]);
-    });
-  });
-
-  baixarCSV(linhas, 'vendas-petcare.csv');
-}
-
 // ============ RELATÓRIOS ============
-function periodoRelatorioValido(inicio, fim) {
-  if (inicio && fim && inicio > fim) {
-    document.getElementById('resultadoRelatorio').innerHTML = '';
-    alert('❌ A data inicial não pode ser posterior à data final!');
-    return false;
-  }
-
-  return true;
-}
-
-function obterDadosRelatorio(inicio, fim) {
-  const filtrarPorPeriodo = registros => registros.filter(registro =>
-    (!inicio || registro.data >= inicio) && (!fim || registro.data <= fim)
-  );
-  const vendas = filtrarPorPeriodo(DB.get('vendas'));
-  const atendimentos = filtrarPorPeriodo(DB.get('atendimentos'));
-  const agendamentos = filtrarPorPeriodo(DB.get('agendamentos'));
-  const produtos = DB.get('produtos');
-
-  const totalVendas = vendas.reduce((s, v) => s + v.total, 0);
-  const totalAtend = atendimentos.reduce((s, a) => s + (a.valor || 0), 0);
-  const vendasPorPagamento = vendas.reduce((grupos, venda) => {
-    const forma = venda.pagamento || 'Não informado';
-    let grupo = grupos.find(item => item.forma === forma);
-    if (!grupo) {
-      grupo = { forma, quantidade: 0, total: 0 };
-      grupos.push(grupo);
-    }
-    grupo.quantidade += 1;
-    grupo.total += venda.total;
-    return grupos;
-  }, []);
-  const estoqueNormal = produtos.filter(p => p.qtd > p.minimo).length;
-  const estoqueBaixo = produtos.filter(p => p.qtd > 0 && p.qtd <= p.minimo).length;
-  const semEstoque = produtos.filter(p => p.qtd === 0).length;
-
-  return {
-    vendas, atendimentos, agendamentos, totalVendas, totalAtend, vendasPorPagamento,
-    estoqueNormal, estoqueBaixo, semEstoque
-  };
-}
-
 function gerarRelatorio() {
   const inicio = document.getElementById('relInicio').value;
   const fim = document.getElementById('relFim').value;
-  if (!periodoRelatorioValido(inicio, fim)) return;
 
-  const {
-    vendas, atendimentos, agendamentos, totalVendas, totalAtend,
-    vendasPorPagamento, estoqueNormal, estoqueBaixo, semEstoque
-  } = obterDadosRelatorio(inicio, fim);
+  let vendas = DB.get('vendas');
+  let atendimentos = DB.get('atendimentos');
+  let agendamentos = DB.get('agendamentos');
+
+  if (inicio) {
+    vendas = vendas.filter(v => v.data >= inicio);
+    atendimentos = atendimentos.filter(a => a.data >= inicio);
+    agendamentos = agendamentos.filter(a => a.data >= inicio);
+  }
+  if (fim) {
+    vendas = vendas.filter(v => v.data <= fim);
+    atendimentos = atendimentos.filter(a => a.data <= fim);
+    agendamentos = agendamentos.filter(a => a.data <= fim);
+  }
+
+  const totalVendas = vendas.reduce((s, v) => s + v.total, 0);
+  const totalAtend = atendimentos.reduce((s, a) => s + (a.valor || 0), 0);
 
   let html = `
     <div class="grid-4">
@@ -1167,73 +763,23 @@ function gerarRelatorio() {
     </div>
     
     <div class="card">
-      <h3 class="card-title">💳 Vendas por Forma de Pagamento</h3>
-      ${vendasPorPagamento.length
-        ? `<table><tr><th>Forma de pagamento</th><th>Vendas</th><th>Total</th></tr>
-          ${vendasPorPagamento.map(grupo => `<tr><td>${grupo.forma}</td><td>${grupo.quantidade}</td><td>R$ ${grupo.total.toFixed(2)}</td></tr>`).join('')}
-        </table>`
-        : '<p style="color:#64748b; text-align:center; padding:15px;">Nenhuma venda no período.</p>'}
-    </div>
-
-    <div class="card">
       <h3 class="card-title">📦 Situação do Estoque</h3>
   `;
 
+  const produtos = DB.get('produtos');
+  const ok = produtos.filter(p => p.qtd > p.minimo).length;
+  const baixo = produtos.filter(p => p.qtd > 0 && p.qtd <= p.minimo).length;
+  const sem = produtos.filter(p => p.qtd === 0).length;
+
   html += `
     <div class="grid-3">
-      <div class="stat-card"><div class="value" style="color:#16a34a;">${estoqueNormal}</div><div class="label">✅ Normal</div></div>
-      <div class="stat-card"><div class="value" style="color:#f59e0b;">${estoqueBaixo}</div><div class="label">⚠️ Estoque Baixo</div></div>
-      <div class="stat-card"><div class="value" style="color:#dc2626;">${semEstoque}</div><div class="label">❌ Sem Estoque</div></div>
+      <div class="stat-card"><div class="value" style="color:#16a34a;">${ok}</div><div class="label">✅ Normal</div></div>
+      <div class="stat-card"><div class="value" style="color:#f59e0b;">${baixo}</div><div class="label">⚠️ Estoque Baixo</div></div>
+      <div class="stat-card"><div class="value" style="color:#dc2626;">${sem}</div><div class="label">❌ Sem Estoque</div></div>
     </div>
   </div>`;
 
   document.getElementById('resultadoRelatorio').innerHTML = html;
-}
-
-function exportarRelatorioCSV() {
-  const inicio = document.getElementById('relInicio').value;
-  const fim = document.getElementById('relFim').value;
-  if (!periodoRelatorioValido(inicio, fim)) return;
-
-  const dados = obterDadosRelatorio(inicio, fim);
-  const linhas = [
-    ['Relatório PetCare'],
-    ['Data inicial', inicio || 'Sem limite'],
-    ['Data final', fim || 'Sem limite'],
-    [],
-    ['Indicador', 'Valor'],
-    ['Total em vendas', dados.totalVendas.toFixed(2)],
-    ['Vendas realizadas', dados.vendas.length],
-    ['Atendimentos', dados.atendimentos.length],
-    ['Total em atendimentos', dados.totalAtend.toFixed(2)],
-    ['Agendamentos', dados.agendamentos.length],
-    ['Faturamento total', (dados.totalVendas + dados.totalAtend).toFixed(2)],
-    ['Estoque normal', dados.estoqueNormal],
-    ['Estoque baixo', dados.estoqueBaixo],
-    ['Produtos sem estoque', dados.semEstoque],
-    [],
-    ['Vendas por forma de pagamento'],
-    ['Forma de pagamento', 'Quantidade de vendas', 'Total'],
-    ...dados.vendasPorPagamento.map(grupo => [grupo.forma, grupo.quantidade, grupo.total.toFixed(2)])
-  ];
-  baixarCSV(linhas, 'relatorio-petcare.csv');
-}
-
-function baixarCSV(linhas, nomeArquivo) {
-  const csv = linhas.map(linha => linha.map(valor => {
-    const texto = String(valor == null ? '' : valor);
-    const seguro = /^[\t\r ]*[=+\-@]/.test(texto) ? `'${texto}` : texto;
-    return `"${seguro.replace(/"/g, '""')}"`;
-  }).join(';')).join('\r\n');
-  const arquivo = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(arquivo);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = nomeArquivo;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 // ============ MODAL ============
@@ -1249,7 +795,7 @@ function fecharModal() {
 
 // Data padrão: hoje
 document.addEventListener('DOMContentLoaded', () => {
-  const hoje = dataLocalISO();
+  const hoje = new Date().toISOString().split('T')[0];
   const agData = document.getElementById('agData');
   if (agData) agData.value = hoje;
 });
