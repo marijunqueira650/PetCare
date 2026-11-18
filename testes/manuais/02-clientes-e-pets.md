@@ -6,7 +6,7 @@ Verificar o cadastro e a exibição de um cliente e de um pet vinculado a ele.
 
 ## Pré-condição
 
-Use um perfil de navegador de teste e um CPF fictício ainda não cadastrado.
+Inicie o servidor Express, acesse o PetCare e entre com uma conta de demonstração, conforme as instruções do README. Use um CPF fictício ainda não cadastrado.
 
 ## Passos
 
